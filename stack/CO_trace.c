@@ -133,7 +133,7 @@ static void findVariable(CO_trace_t *trace) {
     if(!err && (index != 0 || subIndex != 0)) {
         uint16_t entryNo = CO_OD_find(trace->SDO, index);
 
-        if(index >= 0x1000 && entryNo != 0xFFFF && subIndex <= trace->SDO->OD[entryNo].maxSubIndex) {
+        if(index >= 0x1000 && entryNo != 0xFFFF && subIndex <= trace->SDO->OD.od[entryNo].maxSubIndex) {
             OdDataPtr = CO_OD_getDataPointer(trace->SDO, entryNo, subIndex);
         }
 

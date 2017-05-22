@@ -258,7 +258,7 @@ static uint32_t CO_PDOfindMap(
     entryNo = CO_OD_find(SDO, index);
 
     /* Does object exist in OD? */
-    if(entryNo == 0xFFFF || subIndex > SDO->OD[entryNo].maxSubIndex)
+    if(entryNo == 0xFFFF || subIndex > SDO->OD.od[entryNo].maxSubIndex)
         return CO_SDO_AB_NOT_EXIST;   /* Object does not exist in the object dictionary. */
 
     attr = CO_OD_getAttribute(SDO, entryNo, subIndex);

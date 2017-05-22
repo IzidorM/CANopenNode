@@ -394,9 +394,9 @@ typedef struct{
     /** Internal flag indicates, that this object has own OD */
     bool_t              ownOD;
     /** Pointer to the @ref CO_SDO_objectDictionary (array) */
-    const CO_OD_entry_t *OD;
-    /** Size of the @ref CO_SDO_objectDictionary */
-    uint16_t            ODSize;
+//    const CO_OD_entry_t *OD;
+//    /** Size of the @ref CO_SDO_objectDictionary */
+//    uint16_t            ODSize;
     /** Pointer to array of CO_OD_extension_t objects. Size of the array is
     equal to ODSize. */
     CO_OD_extension_t  *ODExtensions;
@@ -433,6 +433,7 @@ typedef struct{
     CO_CANmodule_t     *CANdevTx;
     /** CAN transmit buffer inside CANdev for CAN tx message */
     CO_CANtx_t         *CANtxBuff;
+    struct CO_OD OD;
 }CO_SDO_t;
 
 
@@ -555,7 +556,7 @@ CO_ReturnError_t CO_SDO_init(
         uint32_t                COB_IDServerToClient,
         uint16_t                ObjDictIndex_SDOServerParameter,
         CO_SDO_t               *parentSDO,
-        const CO_OD_entry_t     OD[],
+        CO_OD_entry_t const     OD[],
         uint16_t                ODSize,
         CO_OD_extension_t       ODExtensions[],
         uint8_t                 nodeId,

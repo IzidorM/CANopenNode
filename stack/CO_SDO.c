@@ -283,7 +283,7 @@ CO_ReturnError_t CO_SDO_init(
         uint32_t                COB_IDServerToClient,
         uint16_t                ObjDictIndex_SDOServerParameter,
         CO_SDO_t               *parentSDO,
-        const CO_OD_entry_t     OD[],
+        CO_OD_entry_t const     OD[],
         uint16_t                ODSize,
         CO_OD_extension_t      *ODExtensions,
         uint8_t                 nodeId,
@@ -302,8 +302,10 @@ CO_ReturnError_t CO_SDO_init(
         uint16_t i;
 
         SDO->ownOD = true;
-        SDO->OD = OD;
-        SDO->ODSize = ODSize;
+//        SDO->OD = OD;
+//        SDO->ODSize = ODSize;
+        SDO->OD.od = (CO_OD_entry_t *) OD;
+        SDO->OD.od_size = ODSize;
         SDO->ODExtensions = ODExtensions;
 
         /* clear pointers in ODExtensions */
@@ -316,8 +318,11 @@ CO_ReturnError_t CO_SDO_init(
     /* copy object dictionary from parent */
     else{
         SDO->ownOD = false;
-        SDO->OD = parentSDO->OD;
-        SDO->ODSize = parentSDO->ODSize;
+//        SDO->OD = parentSDO->OD;
+//        SDO->ODSize = parentSDO->ODSize;
+
+        SDO->OD.od = parentSDO->OD.od;
+        SDO->OD.od_size = parentSDO->OD.od_size;
         SDO->ODExtensions = parentSDO->ODExtensions;
     }
 
@@ -387,8 +392,8 @@ uint32_t CO_SDO_initTransfer(CO_SDO_t *SDO, uint16_t index, uint8_t subIndex){
     }
 
     /* verify existance of subIndex */
-    if(subIndex > SDO->OD[SDO->entryNo].maxSubIndex &&
-            SDO->OD[SDO->entryNo].pData != NULL)
+    if(subIndex > SDO->OD.od[SDO->entryNo].maxSubIndex &&
+            SDO->OD.od[SDO->entryNo].pData != NULL)
     {
         return CO_SDO_AB_SUB_UNKNOWN;     /* Sub-index does not exist. */
     }

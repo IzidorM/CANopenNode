@@ -34,62 +34,98 @@ void CO_OD_configure(
 }
 
 /******************************************************************************/
-void *CO_OD_find(void *node, uint16_t index)
+//void *CO_OD_find(void *node, uint16_t index)
+//{
+//    /* Fast search in ordered Object Dictionary. If indexes are mixed, this won't work. */
+//    /* If Object Dictionary has up to 2^N entries, then N is max number of loop passes. */
+//    struct CO_OD *n = node;
+//    uint16_t cur, min, max;
+//    CO_OD_entry_t* object;
+//
+//    if ((NULL == n) || (NULL == n->od) || (0 == n->od_size))
+//    {
+//            return NULL;
+//    }
+//
+//    min = 0U;
+////    max = SDO->ODSize - 1U;
+//    max = n->od_size - 1U;
+//
+//    while(min < max)
+//    {
+//            cur = (min + max) / 2;
+//            object = &n->od[cur];
+//
+//            /* Is object matched */
+//            if (index == object->index)
+//            {
+//                    return object;
+//            }
+//            
+//            if (index < object->index)
+//            {
+//                    max = cur;
+//                    if (max)
+//                    {
+//                            max--;
+//                    }
+//            }
+//            else
+//            {
+//                min = cur + 1U;
+//            }
+//    }
+//
+//    if (min == max)
+//    {
+//            //object = &SDO->OD[min];
+//            object = &n->od[min];            
+//
+//            /* Is object matched */
+//            if(index == object->index)
+//            {
+//                    return object;
+//            }
+//    }
+//
+//    return NULL;
+//}
+
+uint16_t CO_OD_find(void *n, uint16_t index)
 {
-    /* Fast search in ordered Object Dictionary. If indexes are mixed, this won't work. */
-    /* If Object Dictionary has up to 2^N entries, then N is max number of loop passes. */
-    struct CO_OD *n = node;
-    uint16_t cur, min, max;
-    CO_OD_entry_t* object;
-
-    if ((NULL == n) || (NULL == n->od) || (0 == n->od_size))
-    {
-            return NULL;
-    }
-
-    min = 0U;
+//    /* Fast search in ordered Object Dictionary. If indexes are mixed, this won't work. */
+//    /* If Object Dictionary has up to 2^N entries, then N is max number of loop passes. */
+//    uint16_t cur, min, max;
+//    const CO_OD_entry_t* object;
+//
+//    min = 0U;
 //    max = SDO->ODSize - 1U;
-    max = n->od_size - 1U;
+//    while(min < max){
+//        cur = (min + max) / 2;
+//        object = &SDO->OD[cur];
+//        /* Is object matched */
+//        if(index == object->index){
+//            return cur;
+//        }
+//        if(index < object->index){
+//            max = cur;
+//            if(max) max--;
+//        }
+//        else
+//            min = cur + 1U;
+//    }
+//
+//    if(min == max){
+//        object = &SDO->OD[min];
+//        /* Is object matched */
+//        if(index == object->index){
+//            return min;
+//        }
+//    }
 
-    while(min < max)
-    {
-            cur = (min + max) / 2;
-            object = &n->od[cur];
-
-            /* Is object matched */
-            if (index == object->index)
-            {
-                    return object;
-            }
-            
-            if (index < object->index)
-            {
-                    max = cur;
-                    if (max)
-                    {
-                            max--;
-                    }
-            }
-            else
-            {
-                min = cur + 1U;
-            }
-    }
-
-    if (min == max)
-    {
-            //object = &SDO->OD[min];
-            object = &n->od[min];            
-
-            /* Is object matched */
-            if(index == object->index)
-            {
-                    return object;
-            }
-    }
-
-    return NULL;
+    return 0xFFFFU;  /* object does not exist in OD */
 }
+
 
 /******************************************************************************/
 uint16_t CO_OD_getLength(void *n, uint16_t entryNo, uint8_t subIndex)
@@ -157,6 +193,7 @@ uint16_t CO_OD_getAttribute(void *n, uint16_t entryNo, uint8_t subIndex)
 //    else{                            /* Object type is Record */
 //        return ((const CO_OD_entryRecord_t*)(object->pData))[subIndex].attribute;
 //    }
+        return 0;
 }
 
 

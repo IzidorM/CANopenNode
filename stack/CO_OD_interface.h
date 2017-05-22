@@ -223,12 +223,10 @@ typedef struct{
     uint8_t            *flags;
 }CO_OD_extension_t;
 
-
 struct CO_OD {
         uint32_t od_size;
         CO_OD_entry_t *od;
 };
-
 
 /**
  * Configure additional functionality to one @ref CO_SDO_objectDictionary entry.
@@ -267,7 +265,7 @@ void CO_OD_configure(
  * @return Sequence number of the @ref CO_SDO_objectDictionary entry, 0xFFFF if not found.
  */
 //uint16_t CO_OD_find(CO_SDO_t *SDO, uint16_t index);
-void *CO_OD_find(void *node, uint16_t index);
+uint16_t CO_OD_find(void *node, uint16_t index);
 
 /**
  * Get length of the given object with specific subIndex.
