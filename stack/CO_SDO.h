@@ -399,7 +399,7 @@ typedef struct{
 //    uint16_t            ODSize;
     /** Pointer to array of CO_OD_extension_t objects. Size of the array is
     equal to ODSize. */
-    CO_OD_extension_t  *ODExtensions;
+//    CO_OD_extension_t  *ODExtensions;
     /** Offset in buffer of next data segment being read/written */
     uint16_t            bufferOffset;
     /** Sequence number of OD entry as returned from CO_OD_find() */

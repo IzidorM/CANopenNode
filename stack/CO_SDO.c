@@ -306,13 +306,13 @@ CO_ReturnError_t CO_SDO_init(
 //        SDO->ODSize = ODSize;
         SDO->OD.od = (CO_OD_entry_t *) OD;
         SDO->OD.od_size = ODSize;
-        SDO->ODExtensions = ODExtensions;
+        SDO->OD.od_extensions = ODExtensions;
 
         /* clear pointers in ODExtensions */
         for(i=0U; i<ODSize; i++){
-            SDO->ODExtensions[i].pODFunc = NULL;
-            SDO->ODExtensions[i].object = NULL;
-            SDO->ODExtensions[i].flags = NULL;
+            SDO->OD.od_extensions[i].pODFunc = NULL;
+            SDO->OD.od_extensions[i].object = NULL;
+            SDO->OD.od_extensions[i].flags = NULL;
         }
     }
     /* copy object dictionary from parent */
@@ -323,7 +323,7 @@ CO_ReturnError_t CO_SDO_init(
 
         SDO->OD.od = parentSDO->OD.od;
         SDO->OD.od_size = parentSDO->OD.od_size;
-        SDO->ODExtensions = parentSDO->ODExtensions;
+        SDO->OD.od_extensions = parentSDO->OD.od_extensions;
     }
 
     /* Configure object variables */
@@ -403,8 +403,8 @@ uint32_t CO_SDO_initTransfer(CO_SDO_t *SDO, uint16_t index, uint8_t subIndex){
 
     /* fill ODF_arg */
     SDO->ODF_arg.object = NULL;
-    if(SDO->ODExtensions){
-        CO_OD_extension_t *ext = &SDO->ODExtensions[SDO->entryNo];
+    if(SDO->OD.od_extensions){
+        CO_OD_extension_t *ext = &SDO->OD.od_extensions[SDO->entryNo];
         SDO->ODF_arg.object = ext->object;
     }
     SDO->ODF_arg.data = SDO->databuffer;
@@ -441,8 +441,8 @@ uint32_t CO_SDO_readOD(CO_SDO_t *SDO, uint16_t SDOBufferSize){
         return CO_SDO_AB_WRITEONLY;     /* attempt to read a write-only object */
 
     /* find extension */
-    if(SDO->ODExtensions != NULL){
-        ext = &SDO->ODExtensions[SDO->entryNo];
+    if(SDO->OD.od_extensions != NULL){
+        ext = &SDO->OD.od_extensions[SDO->entryNo];
     }
 
     /* copy data from OD to SDO buffer if not domain */
@@ -539,8 +539,8 @@ uint32_t CO_SDO_writeOD(CO_SDO_t *SDO, uint16_t length){
 
     /* call Object dictionary function if registered */
     SDO->ODF_arg.reading = false;
-    if(SDO->ODExtensions != NULL){
-        CO_OD_extension_t *ext = &SDO->ODExtensions[SDO->entryNo];
+    if(SDO->OD.od_extensions != NULL){
+        CO_OD_extension_t *ext = &SDO->OD.od_extensions[SDO->entryNo];
 
         if(ext->pODFunc != NULL){
             uint32_t abortCode = ext->pODFunc(&SDO->ODF_arg);
