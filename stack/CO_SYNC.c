@@ -282,9 +282,9 @@ CO_ReturnError_t CO_SYNC_init(
     SYNC->CANdevRxIdx = CANdevRxIdx;
 
     /* Configure Object dictionary entry at index 0x1005, 0x1006 and 0x1019 */
-    CO_OD_configure(SDO, OD_H1005_COBID_SYNC,        CO_ODF_1005, (void*)SYNC, 0, 0);
-    CO_OD_configure(SDO, OD_H1006_COMM_CYCL_PERIOD,  CO_ODF_1006, (void*)SYNC, 0, 0);
-    CO_OD_configure(SDO, OD_H1019_SYNC_CNT_OVERFLOW, CO_ODF_1019, (void*)SYNC, 0, 0);
+    CO_OD_configure(&SDO->OD, OD_H1005_COBID_SYNC,        CO_ODF_1005, (void*)SYNC, 0, 0);
+    CO_OD_configure(&SDO->OD, OD_H1006_COMM_CYCL_PERIOD,  CO_ODF_1006, (void*)SYNC, 0, 0);
+    CO_OD_configure(&SDO->OD, OD_H1019_SYNC_CNT_OVERFLOW, CO_ODF_1019, (void*)SYNC, 0, 0);
 
     /* configure SYNC CAN reception */
     CO_CANrxBufferInit(

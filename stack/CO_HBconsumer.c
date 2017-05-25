@@ -195,7 +195,7 @@ CO_ReturnError_t CO_HBconsumer_init(
         CO_HBcons_monitoredNodeConfig(HBcons, i, HBcons->HBconsTime[i]);
 
     /* Configure Object dictionary entry at index 0x1016 */
-    CO_OD_configure(SDO, OD_H1016_CONSUMER_HB_TIME, CO_ODF_1016, (void*)HBcons, 0, 0);
+    CO_OD_configure(&SDO->OD, OD_H1016_CONSUMER_HB_TIME, CO_ODF_1016, (void*)HBcons, 0, 0);
 
     return CO_ERROR_NO;
 }

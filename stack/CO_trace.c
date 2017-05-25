@@ -462,8 +462,8 @@ void CO_trace_init(
         trace->enabled = false;
     }
 
-    CO_OD_configure(SDO, idx_OD_traceConfig, CO_ODF_traceConfig, (void*)trace, 0, 0);
-    CO_OD_configure(SDO, idx_OD_trace, CO_ODF_trace, (void*)trace, 0, 0);
+    CO_OD_configure(&SDO->OD, idx_OD_traceConfig, CO_ODF_traceConfig, (void*)trace, 0, 0);
+    CO_OD_configure(&SDO->OD, idx_OD_trace, CO_ODF_trace, (void*)trace, 0, 0);
 }
 
 

@@ -283,9 +283,10 @@ CO_ReturnError_t CO_SDO_init(
         uint32_t                COB_IDServerToClient,
         uint16_t                ObjDictIndex_SDOServerParameter,
         CO_SDO_t               *parentSDO,
-        CO_OD_entry_t const     OD[],
-        uint16_t                ODSize,
-        CO_OD_extension_t      *ODExtensions,
+        void                   *OD,
+//        CO_OD_entry_t const     OD[],
+//        uint16_t                ODSize,
+//        CO_OD_extension_t      *ODExtensions,
         uint8_t                 nodeId,
         CO_CANmodule_t         *CANdevRx,
         uint16_t                CANdevRxIdx,
@@ -293,10 +294,12 @@ CO_ReturnError_t CO_SDO_init(
         uint16_t                CANdevTxIdx)
 {
     /* verify arguments */
-    if(SDO==NULL || CANdevRx==NULL || CANdevTx==NULL){
+    if(SDO==NULL || CANdevRx==NULL || CANdevTx==NULL || OD == NULL){
         return CO_ERROR_ILLEGAL_ARGUMENT;
     }
 
+    struct CO_OD *od = OD;
+    
     /* configure own object dictionary */
     if(parentSDO == NULL){
         uint16_t i;
@@ -304,12 +307,12 @@ CO_ReturnError_t CO_SDO_init(
         SDO->ownOD = true;
 //        SDO->OD = OD;
 //        SDO->ODSize = ODSize;
-        SDO->OD.od = (CO_OD_entry_t *) OD;
-        SDO->OD.od_size = ODSize;
-        SDO->OD.od_extensions = ODExtensions;
+        SDO->OD.od = od->od;
+        SDO->OD.od_size = od->od_size;
+        SDO->OD.od_extensions = od->od_extensions;
 
         /* clear pointers in ODExtensions */
-        for(i=0U; i<ODSize; i++){
+        for(i=0U; i<od->od_size; i++){
             SDO->OD.od_extensions[i].pODFunc = NULL;
             SDO->OD.od_extensions[i].object = NULL;
             SDO->OD.od_extensions[i].flags = NULL;
@@ -335,7 +338,7 @@ CO_ReturnError_t CO_SDO_init(
 
     /* Configure Object dictionary entry at index 0x1200 */
     if(ObjDictIndex_SDOServerParameter == OD_H1200_SDO_SERVER_PARAM){
-        CO_OD_configure(SDO, ObjDictIndex_SDOServerParameter, CO_ODF_1200, (void*)&SDO->nodeId, 0U, 0U);
+        CO_OD_configure(od, ObjDictIndex_SDOServerParameter, CO_ODF_1200, (void*)&SDO->nodeId, 0U, 0U);
     }
 
     if((COB_IDClientToServer & 0x80000000) != 0 || (COB_IDServerToClient & 0x80000000) != 0 ){

@@ -226,7 +226,7 @@ typedef struct CO_OD_extension CO_OD_extension_t;
 
 struct CO_OD {
         uint32_t od_size;
-        CO_OD_entry_t *od;
+        CO_OD_entry_t const *od;
         CO_OD_extension_t *od_extensions;
 };
 
@@ -250,7 +250,8 @@ struct CO_OD {
  */
 void CO_OD_configure(
 //        void               *SDO,
-        void *OD,
+//        void *OD,
+        struct CO_OD *OD,
         uint16_t                index,
         uint32_t    (*pODFunc)(CO_ODF_arg_t *ODF_arg),
         void                   *object,

@@ -2,7 +2,8 @@
 #include "CO_SDO.h"
 
 void CO_OD_configure(
-        void *OD,
+//        void *OD,
+        struct CO_OD *OD,
         uint16_t                index,
         uint32_t    (*pODFunc)(CO_ODF_arg_t *ODF_arg),
         void                   *object,
@@ -12,7 +13,7 @@ void CO_OD_configure(
     struct CO_OD *pOD = OD;
     uint16_t entryNo;
 
-    entryNo = CO_OD_find(pOD->od, index);
+    entryNo = CO_OD_find(pOD, index);
     if(entryNo < 0xFFFFU){
         CO_OD_extension_t *ext = &pOD->od_extensions[entryNo];
         uint8_t maxSubIndex = pOD->od[entryNo].maxSubIndex;

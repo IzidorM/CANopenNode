@@ -163,8 +163,8 @@ CO_ReturnError_t CO_EM_init(
     }
 
     /* Configure Object dictionary entry at index 0x1003 and 0x1014 */
-    CO_OD_configure(SDO, OD_H1003_PREDEF_ERR_FIELD, CO_ODF_1003, (void*)emPr, 0, 0U);
-    CO_OD_configure(SDO, OD_H1014_COBID_EMERGENCY, CO_ODF_1014, (void*)&SDO->nodeId, 0, 0U);
+    CO_OD_configure(&SDO->OD, OD_H1003_PREDEF_ERR_FIELD, CO_ODF_1003, (void*)emPr, 0, 0U);
+    CO_OD_configure(&SDO->OD, OD_H1014_COBID_EMERGENCY, CO_ODF_1014, (void*)&SDO->nodeId, 0, 0U);
 
     /* configure emergency message CAN transmission */
     emPr->CANdev = CANdev;
