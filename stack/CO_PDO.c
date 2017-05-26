@@ -255,27 +255,27 @@ static uint32_t CO_PDOfindMap(
     }
 
     /* find object in Object Dictionary */
-    entryNo = CO_OD_find(SDO, index);
+    entryNo = CO_OD_find(&SDO->OD, index);
 
     /* Does object exist in OD? */
     if(entryNo == 0xFFFF || subIndex > SDO->OD.od[entryNo].maxSubIndex)
         return CO_SDO_AB_NOT_EXIST;   /* Object does not exist in the object dictionary. */
 
-    attr = CO_OD_getAttribute(SDO, entryNo, subIndex);
+    attr = CO_OD_getAttribute(&SDO->OD, entryNo, subIndex);
     /* Is object Mappable for RPDO? */
     if(R_T==0 && !((attr&CO_ODA_RPDO_MAPABLE) && (attr&CO_ODA_WRITEABLE))) return CO_SDO_AB_NO_MAP;   /* Object cannot be mapped to the PDO. */
     /* Is object Mappable for TPDO? */
     if(R_T!=0 && !((attr&CO_ODA_TPDO_MAPABLE) && (attr&CO_ODA_READABLE))) return CO_SDO_AB_NO_MAP;   /* Object cannot be mapped to the PDO. */
 
     /* is size of variable big enough for map */
-    objectLen = CO_OD_getLength(SDO, entryNo, subIndex);
+    objectLen = CO_OD_getLength(&SDO->OD, entryNo, subIndex);
     if(objectLen < dataLen) return CO_SDO_AB_NO_MAP;   /* Object cannot be mapped to the PDO. */
 
     /* mark multibyte variable */
     *pIsMultibyteVar = (attr&CO_ODA_MB_VALUE) ? 1 : 0;
 
     /* pointer to data */
-    *ppData = (uint8_t*) CO_OD_getDataPointer(SDO, entryNo, subIndex);
+    *ppData = (uint8_t*) CO_OD_getDataPointer(&SDO->OD, entryNo, subIndex);
 #ifdef CO_BIG_ENDIAN
     /* skip unused MSB bytes */
     if(*pIsMultibyteVar){

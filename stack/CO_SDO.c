@@ -181,8 +181,8 @@ void CO_memcpySwap8(void* dest, const void* src){
  * message with correct identifier will be received. For more information and
  * description of parameters see file CO_driver.h.
  */
-static void CO_SDO_receive(void *object, const CO_CANrxMsg_t *msg);
-static void CO_SDO_receive(void *object, const CO_CANrxMsg_t *msg){
+//static void CO_SDO_receive(void *object, const CO_CANrxMsg_t *msg){
+void CO_SDO_receive(void *object, const CO_CANrxMsg_t *msg){
     CO_SDO_t *SDO;
 
     SDO = (CO_SDO_t*)object;   /* this is the correct pointer type of the first argument */
@@ -258,7 +258,6 @@ static void CO_SDO_receive(void *object, const CO_CANrxMsg_t *msg){
  *
  * For more information see file CO_SDO.h.
  */
-static CO_SDO_abortCode_t CO_ODF_1200(CO_ODF_arg_t *ODF_arg);
 static CO_SDO_abortCode_t CO_ODF_1200(CO_ODF_arg_t *ODF_arg){
     uint8_t *nodeId;
     uint32_t value;
@@ -366,6 +365,10 @@ CO_ReturnError_t CO_SDO_init(
             8,                      /* number of data bytes */
             0);                     /* synchronous message flag bit */
 
+    if (NULL == SDO->CANtxBuff)
+    {
+            return  CO_ERROR_OUT_OF_MEMORY;
+    }
     return CO_ERROR_NO;
 }
 
@@ -389,7 +392,7 @@ uint32_t CO_SDO_initTransfer(CO_SDO_t *SDO, uint16_t index, uint8_t subIndex){
     SDO->ODF_arg.subIndex = subIndex;
 
     /* find object in Object Dictionary */
-    SDO->entryNo = CO_OD_find(SDO, index);
+    SDO->entryNo = CO_OD_find(&SDO->OD, index);
     if(SDO->entryNo == 0xFFFFU){
         return CO_SDO_AB_NOT_EXIST ;     /* object does not exist in OD */
     }
@@ -402,7 +405,7 @@ uint32_t CO_SDO_initTransfer(CO_SDO_t *SDO, uint16_t index, uint8_t subIndex){
     }
 
     /* pointer to data in Object dictionary */
-    SDO->ODF_arg.ODdataStorage = CO_OD_getDataPointer(SDO, SDO->entryNo, subIndex);
+    SDO->ODF_arg.ODdataStorage = CO_OD_getDataPointer(&SDO->OD, SDO->entryNo, subIndex);
 
     /* fill ODF_arg */
     SDO->ODF_arg.object = NULL;
@@ -411,9 +414,9 @@ uint32_t CO_SDO_initTransfer(CO_SDO_t *SDO, uint16_t index, uint8_t subIndex){
         SDO->ODF_arg.object = ext->object;
     }
     SDO->ODF_arg.data = SDO->databuffer;
-    SDO->ODF_arg.dataLength = CO_OD_getLength(SDO, SDO->entryNo, subIndex);
-    SDO->ODF_arg.attribute = CO_OD_getAttribute(SDO, SDO->entryNo, subIndex);
-    SDO->ODF_arg.pFlags = CO_OD_getFlagsPointer(SDO, SDO->entryNo, subIndex);
+    SDO->ODF_arg.dataLength = CO_OD_getLength(&SDO->OD, SDO->entryNo, subIndex);
+    SDO->ODF_arg.attribute = CO_OD_getAttribute(&SDO->OD, SDO->entryNo, subIndex);
+    SDO->ODF_arg.pFlags = CO_OD_getFlagsPointer(&SDO->OD, SDO->entryNo, subIndex);
 
     SDO->ODF_arg.firstSegment = true;
     SDO->ODF_arg.lastSegment = true;
@@ -1032,7 +1035,7 @@ int8_t CO_SDO_process(
 
                 /* move the beginning of the data buffer */
                 SDO->ODF_arg.data += len;
-                SDO->ODF_arg.dataLength = CO_OD_getLength(SDO, SDO->entryNo, SDO->ODF_arg.subIndex) - len;
+                SDO->ODF_arg.dataLength = CO_OD_getLength(&SDO->OD, SDO->entryNo, SDO->ODF_arg.subIndex) - len;
 
                 /* read next data from Object dictionary function */
                 abortCode = CO_SDO_readOD(SDO, CO_SDO_BUFFER_SIZE);
@@ -1183,7 +1186,7 @@ int8_t CO_SDO_process(
                     /* move the beginning of the data buffer */
                     len = SDO->ODF_arg.dataLength; /* length of valid data in buffer */
                     SDO->ODF_arg.data += len;
-                    SDO->ODF_arg.dataLength = CO_OD_getLength(SDO, SDO->entryNo, SDO->ODF_arg.subIndex) - len;
+                    SDO->ODF_arg.dataLength = CO_OD_getLength(&SDO->OD, SDO->entryNo, SDO->ODF_arg.subIndex) - len;
 
                     /* read next data from Object dictionary function */
                     abortCode = CO_SDO_readOD(SDO, CO_SDO_BUFFER_SIZE);

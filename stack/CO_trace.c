@@ -131,14 +131,14 @@ static void findVariable(CO_trace_t *trace) {
 
     /* find mapped variable, if map available */
     if(!err && (index != 0 || subIndex != 0)) {
-        uint16_t entryNo = CO_OD_find(trace->SDO, index);
+        uint16_t entryNo = CO_OD_find(&trace->SDO->OD, index);
 
         if(index >= 0x1000 && entryNo != 0xFFFF && subIndex <= trace->SDO->OD.od[entryNo].maxSubIndex) {
-            OdDataPtr = CO_OD_getDataPointer(trace->SDO, entryNo, subIndex);
+            OdDataPtr = CO_OD_getDataPointer(&trace->SDO->OD, entryNo, subIndex);
         }
 
         if(OdDataPtr != NULL) {
-            uint16_t len = CO_OD_getLength(trace->SDO, entryNo, subIndex);
+            uint16_t len = CO_OD_getLength(&trace->SDO->OD, entryNo, subIndex);
 
             if(len < dataLen) {
                 dataLen = len;

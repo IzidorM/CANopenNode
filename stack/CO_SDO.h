@@ -649,6 +649,9 @@ uint32_t CO_SDO_readOD(CO_SDO_t *SDO, uint16_t SDOBufferSize);
  */
 uint32_t CO_SDO_writeOD(CO_SDO_t *SDO, uint16_t length);
 
+// used for testing only
+void CO_SDO_receive(void *object, const CO_CANrxMsg_t *msg);
+        
 #ifdef __cplusplus
 }
 #endif /*__cplusplus*/
