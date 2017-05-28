@@ -555,7 +555,7 @@ CO_ReturnError_t CO_SDO_init(
         uint32_t                COB_IDClientToServer,
         uint32_t                COB_IDServerToClient,
         uint16_t                ObjDictIndex_SDOServerParameter,
-        CO_SDO_t               *parentSDO,
+//        CO_SDO_t               *parentSDO,
         void                   *OD,
 //        CO_OD_entry_t const     OD[],
 //        uint16_t                ODSize,

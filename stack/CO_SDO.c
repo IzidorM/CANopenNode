@@ -281,7 +281,7 @@ CO_ReturnError_t CO_SDO_init(
         uint32_t                COB_IDClientToServer,
         uint32_t                COB_IDServerToClient,
         uint16_t                ObjDictIndex_SDOServerParameter,
-        CO_SDO_t               *parentSDO,
+//        CO_SDO_t               *parentSDO,
         void                   *OD,
 //        CO_OD_entry_t const     OD[],
 //        uint16_t                ODSize,
@@ -300,8 +300,8 @@ CO_ReturnError_t CO_SDO_init(
     struct CO_OD *od = OD;
     
     /* configure own object dictionary */
-    if(parentSDO == NULL){
-        uint16_t i;
+//    if(parentSDO == NULL){
+//        uint16_t i;
 
         SDO->ownOD = true;
 //        SDO->OD = OD;
@@ -310,23 +310,25 @@ CO_ReturnError_t CO_SDO_init(
         SDO->OD.od_size = od->od_size;
         SDO->OD.od_extensions = od->od_extensions;
 
+        // TODO: Move cleaning of extensions to OD init ...
+        
         /* clear pointers in ODExtensions */
-        for(i=0U; i<od->od_size; i++){
-            SDO->OD.od_extensions[i].pODFunc = NULL;
-            SDO->OD.od_extensions[i].object = NULL;
-            SDO->OD.od_extensions[i].flags = NULL;
-        }
-    }
-    /* copy object dictionary from parent */
-    else{
-        SDO->ownOD = false;
-//        SDO->OD = parentSDO->OD;
-//        SDO->ODSize = parentSDO->ODSize;
-
-        SDO->OD.od = parentSDO->OD.od;
-        SDO->OD.od_size = parentSDO->OD.od_size;
-        SDO->OD.od_extensions = parentSDO->OD.od_extensions;
-    }
+//        for(i=0U; i<od->od_size; i++){
+//            SDO->OD.od_extensions[i].pODFunc = NULL;
+//            SDO->OD.od_extensions[i].object = NULL;
+//            SDO->OD.od_extensions[i].flags = NULL;
+//        }
+//    }
+//    /* copy object dictionary from parent */
+//    else{
+//        SDO->ownOD = false;
+////        SDO->OD = parentSDO->OD;
+////        SDO->ODSize = parentSDO->ODSize;
+//
+//        SDO->OD.od = parentSDO->OD.od;
+//        SDO->OD.od_size = parentSDO->OD.od_size;
+//        SDO->OD.od_extensions = parentSDO->OD.od_extensions;
+//    }
 
     /* Configure object variables */
     SDO->nodeId = nodeId;
