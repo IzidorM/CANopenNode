@@ -169,7 +169,7 @@ typedef struct{
     /** Attribute of object in Object dictionary (informative, must NOT be changed). */
     uint16_t            attribute;
     /** Pointer to the #CO_SDO_OD_flags_t byte. */
-    uint8_t            *pFlags;
+//    uint8_t            *pFlags;
     /** Index of object in Object dictionary (informative, must NOT be changed). */
     uint16_t            index;
     /** Subindex of object in Object dictionary (informative, must NOT be changed). */
@@ -224,11 +224,7 @@ struct CO_OD_extension{
 };
 typedef struct CO_OD_extension CO_OD_extension_t;
 
-struct CO_OD {
-        uint32_t od_size;
-        CO_OD_entry_t const *od;
-        CO_OD_extension_t *od_extensions;
-};
+struct CO_OD;
 
 /**
  * Configure additional functionality to one @ref CO_SDO_objectDictionary entry.
@@ -268,8 +264,8 @@ void CO_OD_configure(
  * @return Sequence number of the @ref CO_SDO_objectDictionary entry, 0xFFFF if not found.
  */
 //uint16_t CO_OD_find(CO_SDO_t *SDO, uint16_t index);
-uint16_t CO_OD_find(void *node, uint16_t index);
-
+//uint16_t CO_OD_find(void *node, uint16_t index);
+const void *CO_OD_find(void *OD, uint16_t index);
 /**
  * Get length of the given object with specific subIndex.
  *
@@ -280,8 +276,9 @@ uint16_t CO_OD_find(void *node, uint16_t index);
  * @return Data length of the variable.
  */
 //uint16_t CO_OD_getLength(CO_SDO_t *SDO, uint16_t entryNo, uint8_t subIndex);
-uint16_t CO_OD_getLength(void *n, uint16_t entryNo, uint8_t subIndex);
-
+//uint16_t CO_OD_getLength(void *n, uint16_t entryNo, uint8_t subIndex);
+uint16_t CO_OD_getLength(const CO_OD_entry_t* object, uint8_t subIndex);
+        
 /**
  * Get attribute of the given object with specific subIndex. See #CO_SDO_OD_attributes_t.
  *
@@ -295,8 +292,8 @@ uint16_t CO_OD_getLength(void *n, uint16_t entryNo, uint8_t subIndex);
  * @return Attribute of the variable.
  */
 //uint16_t CO_OD_getAttribute(CO_SDO_t *SDO, uint16_t entryNo, uint8_t subIndex);
-uint16_t CO_OD_getAttribute(void *n, uint16_t entryNo, uint8_t subIndex);
-
+//uint16_t CO_OD_getAttribute(void *n, uint16_t entryNo, uint8_t subIndex);
+uint16_t CO_OD_getAttribute(const CO_OD_entry_t* object, uint8_t subIndex);
 /**
  * Get pointer to data of the given object with specific subIndex.
  *
@@ -309,8 +306,8 @@ uint16_t CO_OD_getAttribute(void *n, uint16_t entryNo, uint8_t subIndex);
  *
  * @return Pointer to the variable in @ref CO_SDO_objectDictionary.
  */
-void* CO_OD_getDataPointer(void *n, uint16_t entryNo, uint8_t subIndex);
-
+//void* CO_OD_getDataPointer(void *n, uint16_t entryNo, uint8_t subIndex);
+void* CO_OD_getDataPointer(const CO_OD_entry_t* object, uint8_t subIndex);
 
 /**
  * Get pointer to the #CO_SDO_OD_flags_t byte of the given object with
@@ -322,7 +319,12 @@ void* CO_OD_getDataPointer(void *n, uint16_t entryNo, uint8_t subIndex);
  *
  * @return Pointer to the #CO_SDO_OD_flags_t of the variable.
  */
-uint8_t* CO_OD_getFlagsPointer(void *n, uint16_t entryNo, uint8_t subIndex);
+//uint8_t* CO_OD_getFlagsPointer(void *n, uint16_t entryNo, uint8_t subIndex);
+//uint8_t* CO_OD_getFlagsPointer(CO_OD_extension_t *od_extension, uint8_t subIndex);
+
+struct CO_OD *CO_OD_interface_init(void);
+uint8_t CO_OD_getMaxSubindex(const CO_OD_entry_t* object);
+void *CO_OD_getExtension(void *OD, const CO_OD_entry_t* object);
 
 
 #endif

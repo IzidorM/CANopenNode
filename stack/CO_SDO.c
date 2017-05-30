@@ -306,9 +306,9 @@ CO_ReturnError_t CO_SDO_init(
         SDO->ownOD = true;
 //        SDO->OD = OD;
 //        SDO->ODSize = ODSize;
-        SDO->OD.od = od->od;
-        SDO->OD.od_size = od->od_size;
-        SDO->OD.od_extensions = od->od_extensions;
+        SDO->OD = od;
+//        SDO->OD.od_size = od->od_size;
+//        SDO->OD.od_extensions = od->od_extensions;
 
         // TODO: Move cleaning of extensions to OD init ...
         
@@ -394,31 +394,55 @@ uint32_t CO_SDO_initTransfer(CO_SDO_t *SDO, uint16_t index, uint8_t subIndex){
     SDO->ODF_arg.subIndex = subIndex;
 
     /* find object in Object Dictionary */
-    SDO->entryNo = CO_OD_find(&SDO->OD, index);
-    if(SDO->entryNo == 0xFFFFU){
-        return CO_SDO_AB_NOT_EXIST ;     /* object does not exist in OD */
+//    SDO->entryNo = CO_OD_find(&SDO->OD, index);
+//    if(SDO->entryNo == 0xFFFFU){
+//        return CO_SDO_AB_NOT_EXIST ;     /* object does not exist in OD */
+//    }
+//    const CO_OD_entry_t* object = CO_OD_find(&SDO->OD, index);
+    SDO->object = CO_OD_find(SDO->OD, index);
+    if (NULL == SDO->object)
+    {
+            return CO_SDO_AB_NOT_EXIST ;     /* object does not exist in OD */
     }
 
     /* verify existance of subIndex */
-    if(subIndex > SDO->OD.od[SDO->entryNo].maxSubIndex &&
-            SDO->OD.od[SDO->entryNo].pData != NULL)
+//    if(subIndex > SDO->OD.od[SDO->entryNo].maxSubIndex &&
+//            SDO->OD.od[SDO->entryNo].pData != NULL)
+//    {
+//        return CO_SDO_AB_SUB_UNKNOWN;     /* Sub-index does not exist. */
+//    }
+
+    if (subIndex > CO_OD_getMaxSubindex(SDO->object))
     {
-        return CO_SDO_AB_SUB_UNKNOWN;     /* Sub-index does not exist. */
+            return CO_SDO_AB_SUB_UNKNOWN;     /* Sub-index does not exist. */
     }
-
+    
     /* pointer to data in Object dictionary */
-    SDO->ODF_arg.ODdataStorage = CO_OD_getDataPointer(&SDO->OD, SDO->entryNo, subIndex);
-
+//    SDO->ODF_arg.ODdataStorage = CO_OD_getDataPointer(&SDO->OD, SDO->entryNo, subIndex);
+    SDO->ODF_arg.ODdataStorage = CO_OD_getDataPointer(SDO->object, subIndex);
+    
     /* fill ODF_arg */
     SDO->ODF_arg.object = NULL;
-    if(SDO->OD.od_extensions){
-        CO_OD_extension_t *ext = &SDO->OD.od_extensions[SDO->entryNo];
-        SDO->ODF_arg.object = ext->object;
+//    if(SDO->OD.od_extensions){
+//        CO_OD_extension_t *ext = &SDO->OD.od_extensions[SDO->entryNo];
+//        SDO->ODF_arg.object = ext->object;
+//    }
+    SDO->extension = CO_OD_getExtension(SDO->OD, SDO->object);
+    if (SDO->extension)
+    {
+            SDO->ODF_arg.object = SDO->extension->object;
     }
+    
     SDO->ODF_arg.data = SDO->databuffer;
-    SDO->ODF_arg.dataLength = CO_OD_getLength(&SDO->OD, SDO->entryNo, subIndex);
-    SDO->ODF_arg.attribute = CO_OD_getAttribute(&SDO->OD, SDO->entryNo, subIndex);
-    SDO->ODF_arg.pFlags = CO_OD_getFlagsPointer(&SDO->OD, SDO->entryNo, subIndex);
+
+
+
+    
+//    SDO->ODF_arg.dataLength = CO_OD_getLength(&SDO->OD, SDO->entryNo, subIndex);
+    SDO->ODF_arg.dataLength = CO_OD_getLength(SDO->object, subIndex);
+//    SDO->ODF_arg.attribute = CO_OD_getAttribute(&SDO->OD, SDO->entryNo, subIndex);
+    SDO->ODF_arg.attribute = CO_OD_getAttribute(SDO->object, subIndex);
+//    SDO->ODF_arg.pFlags = CO_OD_getFlagsPointer(&SDO->OD, SDO->entryNo, subIndex);
 
     SDO->ODF_arg.firstSegment = true;
     SDO->ODF_arg.lastSegment = true;
@@ -442,16 +466,10 @@ uint32_t CO_SDO_readOD(CO_SDO_t *SDO, uint16_t SDOBufferSize){
     uint8_t *SDObuffer = SDO->ODF_arg.data;
     uint8_t *ODdata = (uint8_t*)SDO->ODF_arg.ODdataStorage;
     uint16_t length = SDO->ODF_arg.dataLength;
-    CO_OD_extension_t *ext = 0;
 
     /* is object readable? */
     if((SDO->ODF_arg.attribute & CO_ODA_READABLE) == 0)
         return CO_SDO_AB_WRITEONLY;     /* attempt to read a write-only object */
-
-    /* find extension */
-    if(SDO->OD.od_extensions != NULL){
-        ext = &SDO->OD.od_extensions[SDO->entryNo];
-    }
 
     /* copy data from OD to SDO buffer if not domain */
     if(ODdata != NULL){
@@ -461,15 +479,15 @@ uint32_t CO_SDO_readOD(CO_SDO_t *SDO, uint16_t SDOBufferSize){
     }
     /* if domain, Object dictionary function MUST exist */
     else{
-        if(ext->pODFunc == NULL){
+        if(SDO->extension->pODFunc == NULL){
             return CO_SDO_AB_DEVICE_INCOMPAT;     /* general internal incompatibility in the device */
         }
     }
 
     /* call Object dictionary function if registered */
     SDO->ODF_arg.reading = true;
-    if(ext->pODFunc != NULL){
-        uint32_t abortCode = ext->pODFunc(&SDO->ODF_arg);
+    if(SDO->extension->pODFunc != NULL){
+        uint32_t abortCode = SDO->extension->pODFunc(&SDO->ODF_arg);
         if(abortCode != 0U){
             return abortCode;
         }
@@ -547,16 +565,15 @@ uint32_t CO_SDO_writeOD(CO_SDO_t *SDO, uint16_t length){
 
     /* call Object dictionary function if registered */
     SDO->ODF_arg.reading = false;
-    if(SDO->OD.od_extensions != NULL){
-        CO_OD_extension_t *ext = &SDO->OD.od_extensions[SDO->entryNo];
-
-        if(ext->pODFunc != NULL){
-            uint32_t abortCode = ext->pODFunc(&SDO->ODF_arg);
-            if(abortCode != 0U){
-                return abortCode;
+    if(SDO->extension != NULL){
+            if(SDO->extension->pODFunc != NULL){
+                    uint32_t abortCode = SDO->extension->pODFunc(&SDO->ODF_arg);
+                    if(abortCode != 0U){
+                            return abortCode;
+                    }
             }
-        }
     }
+
     SDO->ODF_arg.offset += SDO->ODF_arg.dataLength;
     SDO->ODF_arg.firstSegment = false;
 
@@ -1037,7 +1054,9 @@ int8_t CO_SDO_process(
 
                 /* move the beginning of the data buffer */
                 SDO->ODF_arg.data += len;
-                SDO->ODF_arg.dataLength = CO_OD_getLength(&SDO->OD, SDO->entryNo, SDO->ODF_arg.subIndex) - len;
+//                SDO->ODF_arg.dataLength = CO_OD_getLength(&SDO->OD, SDO->entryNo, SDO->ODF_arg.subIndex) - len;
+                const CO_OD_entry_t* object = SDO->object;
+                SDO->ODF_arg.dataLength = CO_OD_getLength(object, SDO->ODF_arg.subIndex) - len;
 
                 /* read next data from Object dictionary function */
                 abortCode = CO_SDO_readOD(SDO, CO_SDO_BUFFER_SIZE);
@@ -1188,8 +1207,11 @@ int8_t CO_SDO_process(
                     /* move the beginning of the data buffer */
                     len = SDO->ODF_arg.dataLength; /* length of valid data in buffer */
                     SDO->ODF_arg.data += len;
-                    SDO->ODF_arg.dataLength = CO_OD_getLength(&SDO->OD, SDO->entryNo, SDO->ODF_arg.subIndex) - len;
+//                    SDO->ODF_arg.dataLength = CO_OD_getLength(&SDO->OD, SDO->entryNo, SDO->ODF_arg.subIndex) - len;
 
+                    const CO_OD_entry_t* object = SDO->object;
+                    SDO->ODF_arg.dataLength = CO_OD_getLength(object, SDO->ODF_arg.subIndex) - len;
+                    
                     /* read next data from Object dictionary function */
                     abortCode = CO_SDO_readOD(SDO, CO_SDO_BUFFER_SIZE);
                     if(abortCode != 0U){

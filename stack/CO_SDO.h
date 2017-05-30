@@ -403,7 +403,9 @@ typedef struct{
     /** Offset in buffer of next data segment being read/written */
     uint16_t            bufferOffset;
     /** Sequence number of OD entry as returned from CO_OD_find() */
-    uint16_t            entryNo;
+//    uint16_t            entryNo;
+    const void *object;
+    CO_OD_extension_t *extension;
     /** CO_ODF_arg_t object with additional variables. Reference to this object
     is passed to @ref CO_SDO_OD_function */
     CO_ODF_arg_t        ODF_arg;
@@ -433,7 +435,7 @@ typedef struct{
     CO_CANmodule_t     *CANdevTx;
     /** CAN transmit buffer inside CANdev for CAN tx message */
     CO_CANtx_t         *CANtxBuff;
-    struct CO_OD OD;
+    struct CO_OD *OD;
 }CO_SDO_t;
 
 

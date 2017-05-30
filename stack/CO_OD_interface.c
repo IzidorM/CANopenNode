@@ -1,104 +1,32 @@
 #include "CO_driver.h"
 #include "CO_SDO.h"
+#include "CO_OD.h"
 
-void CO_OD_configure(
-//        void *OD,
-        struct CO_OD *OD,
-        uint16_t                index,
-        uint32_t    (*pODFunc)(CO_ODF_arg_t *ODF_arg),
-        void                   *object,
-        uint8_t                *flags,
-        uint8_t                 flagsSize)
+struct CO_OD {
+        uint32_t od_size;
+        CO_OD_entry_t const *od;
+        CO_OD_extension_t *od_extensions;
+};
+
+struct CO_OD OD_MASTER = {0,0,0};
+//};
+
+struct CO_OD *CO_OD_interface_init(void)
 {
-    struct CO_OD *pOD = OD;
-    uint16_t entryNo;
-
-    entryNo = CO_OD_find(pOD, index);
-    if(entryNo < 0xFFFFU){
-        CO_OD_extension_t *ext = &pOD->od_extensions[entryNo];
-        uint8_t maxSubIndex = pOD->od[entryNo].maxSubIndex;
-
-        ext->pODFunc = pODFunc;
-        ext->object = object;
-        if((flags != NULL) && (flagsSize != 0U) && (flagsSize == maxSubIndex)){
-            uint16_t i;
-            ext->flags = flags;
-            for(i=0U; i<=maxSubIndex; i++){
-                ext->flags[i] = 0U;
-            }
-        }
-        else{
-            ext->flags = NULL;
-        }
-    }
+        OD_MASTER.od_size = od_get_od_size();
+        OD_MASTER.od = od_get_od_ptr();
+        OD_MASTER.od_extensions = od_get_od_ext_ptr();
+        return &OD_MASTER;
 }
 
-/******************************************************************************/
-//void *CO_OD_find(void *node, uint16_t index)
-//{
-//    /* Fast search in ordered Object Dictionary. If indexes are mixed, this won't work. */
-//    /* If Object Dictionary has up to 2^N entries, then N is max number of loop passes. */
-//    struct CO_OD *n = node;
-//    uint16_t cur, min, max;
-//    CO_OD_entry_t* object;
-//
-//    if ((NULL == n) || (NULL == n->od) || (0 == n->od_size))
-//    {
-//            return NULL;
-//    }
-//
-//    min = 0U;
-////    max = SDO->ODSize - 1U;
-//    max = n->od_size - 1U;
-//
-//    while(min < max)
-//    {
-//            cur = (min + max) / 2;
-//            object = &n->od[cur];
-//
-//            /* Is object matched */
-//            if (index == object->index)
-//            {
-//                    return object;
-//            }
-//            
-//            if (index < object->index)
-//            {
-//                    max = cur;
-//                    if (max)
-//                    {
-//                            max--;
-//                    }
-//            }
-//            else
-//            {
-//                min = cur + 1U;
-//            }
-//    }
-//
-//    if (min == max)
-//    {
-//            //object = &SDO->OD[min];
-//            object = &n->od[min];            
-//
-//            /* Is object matched */
-//            if(index == object->index)
-//            {
-//                    return object;
-//            }
-//    }
-//
-//    return NULL;
-//}
-
-uint16_t CO_OD_find(void *OD, uint16_t index)
+uint16_t CO_OD_find_internal(void *OD, uint16_t index)
 {
     /* Fast search in ordered Object Dictionary. If indexes are mixed, this won't work. */
     /* If Object Dictionary has up to 2^N entries, then N is max number of loop passes. */
     uint16_t cur, min, max;
 
     struct CO_OD *pOD = OD;    
-    const CO_OD_entry_t* object;
+    const CO_OD_entry_t* object = NULL;
 
     min = 0U;
     max = pOD->od_size - 1U;
@@ -125,19 +53,97 @@ uint16_t CO_OD_find(void *OD, uint16_t index)
         }
     }
 
-    return 0xFFFFU;  /* object does not exist in OD */
+    return 0xffff;
+}
+
+
+void CO_OD_configure(
+//        void *OD,
+        struct CO_OD *OD,
+        uint16_t                index,
+        uint32_t    (*pODFunc)(CO_ODF_arg_t *ODF_arg),
+        void                   *object,
+        uint8_t                *flags,
+        uint8_t                 flagsSize)
+{
+    struct CO_OD *pOD = OD;
+    uint16_t entryNo;
+
+    entryNo = CO_OD_find_internal(pOD, index);
+    if(entryNo < 0xFFFFU){
+        CO_OD_extension_t *ext = &pOD->od_extensions[entryNo];
+        uint8_t maxSubIndex = pOD->od[entryNo].maxSubIndex;
+
+        ext->pODFunc = pODFunc;
+        ext->object = object;
+        if((flags != NULL) && (flagsSize != 0U) && (flagsSize == maxSubIndex)){
+            uint16_t i;
+            ext->flags = flags;
+            for(i=0U; i<=maxSubIndex; i++){
+                ext->flags[i] = 0U;
+            }
+        }
+        else{
+            ext->flags = NULL;
+        }
+    }
+}
+
+//uint16_t CO_OD_find(void *OD, uint16_t index)
+const void *CO_OD_find(void *OD, uint16_t index)
+{
+    /* Fast search in ordered Object Dictionary. If indexes are mixed, this won't work. */
+    /* If Object Dictionary has up to 2^N entries, then N is max number of loop passes. */
+    uint16_t cur, min, max;
+
+    struct CO_OD *pOD = OD;    
+    const CO_OD_entry_t* object = NULL;
+
+    min = 0U;
+    max = pOD->od_size - 1U;
+    while(min < max){
+        cur = (min + max) / 2;
+        object = &pOD->od[cur];
+        /* Is object matched */
+        if(index == object->index){
+            return object;
+        }
+        if(index < object->index){
+            max = cur;
+            if(max) max--;
+        }
+        else
+            min = cur + 1U;
+    }
+
+    if(min == max){
+        object = &pOD->od[min];
+        /* Is object matched */
+        if(index == object->index){
+            return object;
+        }
+    }
+
+    return NULL;
 }
 
 
 /******************************************************************************/
-uint16_t CO_OD_getLength(void *OD, uint16_t entryNo, uint8_t subIndex)
+//uint16_t CO_OD_getLength(void *OD, uint16_t entryNo, uint8_t subIndex)
+uint16_t CO_OD_getLength(const CO_OD_entry_t* object, uint8_t subIndex)
 {
-    struct CO_OD *pOD = OD;    
-    const CO_OD_entry_t* object = &pOD->od[entryNo];
+//    struct CO_OD *pOD = OD;    
+//    const CO_OD_entry_t* object = &pOD->od[entryNo];
+//
+//    if(entryNo == 0xFFFFU){
+//        return 0U;
+//    }
 
-    if(entryNo == 0xFFFFU){
-        return 0U;
-    }
+        if(NULL == object)
+        {
+                return 0U;
+        }
+
 
     if(object->maxSubIndex == 0U){    /* Object type is Var */
         if(object->pData == 0){ /* data type is domain */
@@ -173,14 +179,20 @@ uint16_t CO_OD_getLength(void *OD, uint16_t entryNo, uint8_t subIndex)
 
 
 /******************************************************************************/
-uint16_t CO_OD_getAttribute(void *OD, uint16_t entryNo, uint8_t subIndex)
+//uint16_t CO_OD_getAttribute(void *OD, uint16_t entryNo, uint8_t subIndex)
+uint16_t CO_OD_getAttribute(const CO_OD_entry_t* object, uint8_t subIndex)
 {
-    struct CO_OD *pOD = OD;    
-    const CO_OD_entry_t* object = &pOD->od[entryNo];
+//    struct CO_OD *pOD = OD;    
+//    const CO_OD_entry_t* object = &pOD->od[entryNo];
+//
+//    if(entryNo == 0xFFFFU){
+//        return 0U;
+//    }
 
-    if(entryNo == 0xFFFFU){
-        return 0U;
-    }
+        if(NULL == object)
+        {
+                return 0U;
+        }
 
     if(object->maxSubIndex == 0U){   /* Object type is Var */
         return object->attribute;
@@ -201,15 +213,21 @@ uint16_t CO_OD_getAttribute(void *OD, uint16_t entryNo, uint8_t subIndex)
 
 
 /******************************************************************************/
-void* CO_OD_getDataPointer(void *OD, uint16_t entryNo, uint8_t subIndex)
+void* CO_OD_getDataPointer(const CO_OD_entry_t* object, uint8_t subIndex)
 {
-    struct CO_OD *pOD = OD;    
-    const CO_OD_entry_t* object = &pOD->od[entryNo];
+//    struct CO_OD *pOD = OD;    
+//    const CO_OD_entry_t* object = &pOD->od[entryNo];
+//
+//    if(entryNo == 0xFFFFU){
+//        return 0;
+//    }
 
-    if(entryNo == 0xFFFFU){
-        return 0;
-    }
+        if(NULL == object)
+        {
+                return 0U;
+        }
 
+        
     if(object->maxSubIndex == 0U){   /* Object type is Var */
         return object->pData;
     }
@@ -233,18 +251,25 @@ void* CO_OD_getDataPointer(void *OD, uint16_t entryNo, uint8_t subIndex)
 
 
 /******************************************************************************/
-uint8_t* CO_OD_getFlagsPointer(void *OD, uint16_t entryNo, uint8_t subIndex)
+//uint8_t* CO_OD_getFlagsPointer(void *OD, uint16_t entryNo, uint8_t subIndex)
+//uint8_t* CO_OD_getFlagsPointer(CO_OD_extension_t *od_extension, uint8_t subIndex)
+//{
+//    if(NULL == od_extension){
+//        return 0;
+//    }
+//
+//    return &od_extension->flags[subIndex];
+//}
+
+uint8_t CO_OD_getMaxSubindex(const CO_OD_entry_t* object)
 {
-    struct CO_OD *pOD = OD;    
-
-    CO_OD_extension_t* ext;
-
-    if((entryNo == 0xFFFFU) || (pOD->od_extensions == 0)){
-        return 0;
-    }
-
-    ext = &pOD->od_extensions[entryNo];
-
-    return &ext->flags[subIndex];
+        return object->maxSubIndex;
 }
 
+void *CO_OD_getExtension(void *OD, const CO_OD_entry_t* object)
+{
+        struct CO_OD *pOD = OD;    
+
+        uint16_t i = CO_OD_find_internal(OD, object->index);
+        return &pOD->od_extensions[i];
+}
