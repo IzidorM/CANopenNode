@@ -266,10 +266,22 @@ uint8_t CO_OD_getMaxSubindex(const CO_OD_entry_t* object)
         return object->maxSubIndex;
 }
 
-void *CO_OD_getExtension(void *OD, const CO_OD_entry_t* object)
+//void *CO_OD_getExtension(void *OD, const CO_OD_entry_t* object)
+//{
+//        struct CO_OD *pOD = OD;    
+//
+//        uint16_t i = CO_OD_find_internal(OD, object->index);
+//        return &pOD->od_extensions[i];
+//}
+
+CO_OD_extension_t *CO_OD_getExtension(void *OD, const CO_OD_entry_t* object)
 {
         struct CO_OD *pOD = OD;    
 
         uint16_t i = CO_OD_find_internal(OD, object->index);
+        if (0xffff == i)
+        {
+                return NULL;
+        }
         return &pOD->od_extensions[i];
 }

@@ -215,12 +215,13 @@ typedef struct{
  */
 struct CO_OD_extension{
     /** Pointer to @ref CO_SDO_OD_function */
-    uint32_t (*pODFunc)(CO_ODF_arg_t *ODF_arg);
+//    uint32_t (*pODFunc)(CO_ODF_arg_t *ODF_arg);
+        uint32_t (*pODFunc)(void *ODF_arg);
     /** Pointer to object, which will be passed to @ref CO_SDO_OD_function */
     void               *object;
     /** Pointer to #CO_SDO_OD_flags_t. If object type is array or record, this
     variable points to array with length equal to number of subindexes. */
-    uint8_t            *flags;
+//    uint8_t            *flags;
 };
 typedef struct CO_OD_extension CO_OD_extension_t;
 
