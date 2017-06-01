@@ -258,11 +258,11 @@ void CO_SDO_receive(void *object, const CO_CANrxMsg_t *msg){
  *
  * For more information see file CO_SDO.h.
  */
-static CO_SDO_abortCode_t CO_ODF_1200(CO_ODF_arg_t *ODF_arg){
+static uint32_t CO_ODF_1200(void *arg){
     uint8_t *nodeId;
     uint32_t value;
     CO_SDO_abortCode_t ret = CO_SDO_AB_NONE;
-
+    CO_ODF_arg_t *ODF_arg = arg;
     nodeId = (uint8_t*) ODF_arg->object;
     value = CO_getUint32(ODF_arg->data);
 
@@ -339,7 +339,8 @@ CO_ReturnError_t CO_SDO_init(
 
     /* Configure Object dictionary entry at index 0x1200 */
     if(ObjDictIndex_SDOServerParameter == OD_H1200_SDO_SERVER_PARAM){
-        CO_OD_configure(od, ObjDictIndex_SDOServerParameter, CO_ODF_1200, (void*)&SDO->nodeId, 0U, 0U);
+        CO_OD_configure(od, ObjDictIndex_SDOServerParameter,
+                        CO_ODF_1200, (void*)&SDO->nodeId);
     }
 
     if((COB_IDClientToServer & 0x80000000) != 0 || (COB_IDServerToClient & 0x80000000) != 0 ){
@@ -427,7 +428,7 @@ uint32_t CO_SDO_initTransfer(CO_SDO_t *SDO, uint16_t index, uint8_t subIndex){
 //        CO_OD_extension_t *ext = &SDO->OD.od_extensions[SDO->entryNo];
 //        SDO->ODF_arg.object = ext->object;
 //    }
-    SDO->extension = CO_OD_getExtension(SDO->OD, SDO->object);
+    SDO->extension = CO_OD_getCallback(SDO->OD, SDO->object);
     if (SDO->extension)
     {
             SDO->ODF_arg.object = SDO->extension->object;
@@ -1055,7 +1056,7 @@ int8_t CO_SDO_process(
                 /* move the beginning of the data buffer */
                 SDO->ODF_arg.data += len;
 //                SDO->ODF_arg.dataLength = CO_OD_getLength(&SDO->OD, SDO->entryNo, SDO->ODF_arg.subIndex) - len;
-                const CO_OD_entry_t* object = SDO->object;
+                const void* object = SDO->object;
                 SDO->ODF_arg.dataLength = CO_OD_getLength(object, SDO->ODF_arg.subIndex) - len;
 
                 /* read next data from Object dictionary function */
@@ -1209,7 +1210,7 @@ int8_t CO_SDO_process(
                     SDO->ODF_arg.data += len;
 //                    SDO->ODF_arg.dataLength = CO_OD_getLength(&SDO->OD, SDO->entryNo, SDO->ODF_arg.subIndex) - len;
 
-                    const CO_OD_entry_t* object = SDO->object;
+                    const void * object = SDO->object;
                     SDO->ODF_arg.dataLength = CO_OD_getLength(object, SDO->ODF_arg.subIndex) - len;
                     
                     /* read next data from Object dictionary function */

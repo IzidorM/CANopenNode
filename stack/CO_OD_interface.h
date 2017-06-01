@@ -250,10 +250,10 @@ void CO_OD_configure(
 //        void *OD,
         struct CO_OD *OD,
         uint16_t                index,
-        uint32_t    (*pODFunc)(CO_ODF_arg_t *ODF_arg),
-        void                   *object,
-        uint8_t                *flags,
-        uint8_t                 flagsSize);
+        uint32_t    (*pODFunc)(void *ODF_arg),
+        void                   *object);
+//        uint8_t                *flags,
+//        uint8_t                 flagsSize);
 
 
 /**
@@ -325,7 +325,8 @@ void* CO_OD_getDataPointer(const CO_OD_entry_t* object, uint8_t subIndex);
 
 struct CO_OD *CO_OD_interface_init(void);
 uint8_t CO_OD_getMaxSubindex(const CO_OD_entry_t* object);
-void *CO_OD_getExtension(void *OD, const CO_OD_entry_t* object);
 
+//void *CO_OD_getExtension(void *OD, const CO_OD_entry_t* object);
+void *CO_OD_getCallback(void *OD, const CO_OD_entry_t* object);
 
 #endif

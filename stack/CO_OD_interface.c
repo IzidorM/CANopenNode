@@ -61,10 +61,10 @@ void CO_OD_configure(
 //        void *OD,
         struct CO_OD *OD,
         uint16_t                index,
-        uint32_t    (*pODFunc)(CO_ODF_arg_t *ODF_arg),
-        void                   *object,
-        uint8_t                *flags,
-        uint8_t                 flagsSize)
+        uint32_t    (*pODFunc)(void *ODF_arg),
+        void                   *object)
+//        uint8_t                *flags,
+//        uint8_t                 flagsSize)
 {
     struct CO_OD *pOD = OD;
     uint16_t entryNo;
@@ -72,20 +72,20 @@ void CO_OD_configure(
     entryNo = CO_OD_find_internal(pOD, index);
     if(entryNo < 0xFFFFU){
         CO_OD_extension_t *ext = &pOD->od_extensions[entryNo];
-        uint8_t maxSubIndex = pOD->od[entryNo].maxSubIndex;
+//        uint8_t maxSubIndex = pOD->od[entryNo].maxSubIndex;
 
         ext->pODFunc = pODFunc;
         ext->object = object;
-        if((flags != NULL) && (flagsSize != 0U) && (flagsSize == maxSubIndex)){
-            uint16_t i;
-            ext->flags = flags;
-            for(i=0U; i<=maxSubIndex; i++){
-                ext->flags[i] = 0U;
-            }
-        }
-        else{
-            ext->flags = NULL;
-        }
+//        if((flags != NULL) && (flagsSize != 0U) && (flagsSize == maxSubIndex)){
+//            uint16_t i;
+//            ext->flags = flags;
+//            for(i=0U; i<=maxSubIndex; i++){
+//                ext->flags[i] = 0U;
+//            }
+//        }
+//        else{
+//            ext->flags = NULL;
+//        }
     }
 }
 
@@ -274,7 +274,7 @@ uint8_t CO_OD_getMaxSubindex(const CO_OD_entry_t* object)
 //        return &pOD->od_extensions[i];
 //}
 
-CO_OD_extension_t *CO_OD_getExtension(void *OD, const CO_OD_entry_t* object)
+void *CO_OD_getCallback(void *OD, const CO_OD_entry_t* object)
 {
         struct CO_OD *pOD = OD;    
 
