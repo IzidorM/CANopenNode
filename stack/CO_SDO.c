@@ -258,21 +258,21 @@ void CO_SDO_receive(void *object, const CO_CANrxMsg_t *msg){
  *
  * For more information see file CO_SDO.h.
  */
-static uint32_t CO_ODF_1200(void *arg){
-    uint8_t *nodeId;
-    uint32_t value;
-    CO_SDO_abortCode_t ret = CO_SDO_AB_NONE;
-    CO_ODF_arg_t *ODF_arg = arg;
-    nodeId = (uint8_t*) ODF_arg->object;
-    value = CO_getUint32(ODF_arg->data);
-
-    /* if SDO reading Object dictionary 0x1200, add nodeId to the value */
-    if((ODF_arg->reading) && (ODF_arg->subIndex > 0U)){
-        CO_setUint32(ODF_arg->data, value + *nodeId);
-    }
-
-    return ret;
-}
+//static uint32_t CO_ODF_1200(void *arg){
+//    uint8_t *nodeId;
+//    uint32_t value;
+//    CO_SDO_abortCode_t ret = CO_SDO_AB_NONE;
+//    CO_ODF_arg_t *ODF_arg = arg;
+//    nodeId = (uint8_t*) ODF_arg->object;
+//    value = CO_getUint32(ODF_arg->data);
+//
+//    /* if SDO reading Object dictionary 0x1200, add nodeId to the value */
+//    if((ODF_arg->reading) && (ODF_arg->subIndex > 0U)){
+//        CO_setUint32(ODF_arg->data, value + *nodeId);
+//    }
+//
+//    return ret;
+//}
 
 
 /******************************************************************************/
@@ -338,10 +338,10 @@ CO_ReturnError_t CO_SDO_init(
 
 
     /* Configure Object dictionary entry at index 0x1200 */
-    if(ObjDictIndex_SDOServerParameter == OD_H1200_SDO_SERVER_PARAM){
-        CO_OD_configure(od, ObjDictIndex_SDOServerParameter,
-                        CO_ODF_1200, (void*)&SDO->nodeId);
-    }
+//    if(ObjDictIndex_SDOServerParameter == OD_H1200_SDO_SERVER_PARAM){
+//            //CO_OD_configure(od, ObjDictIndex_SDOServerParameter,
+//            //            CO_ODF_1200, (void*)&SDO->nodeId);
+//    }
 
     if((COB_IDClientToServer & 0x80000000) != 0 || (COB_IDServerToClient & 0x80000000) != 0 ){
         // SDO is invalid
@@ -428,11 +428,14 @@ uint32_t CO_SDO_initTransfer(CO_SDO_t *SDO, uint16_t index, uint8_t subIndex){
 //        CO_OD_extension_t *ext = &SDO->OD.od_extensions[SDO->entryNo];
 //        SDO->ODF_arg.object = ext->object;
 //    }
-    SDO->extension = CO_OD_getCallback(SDO->OD, SDO->object);
-    if (SDO->extension)
-    {
-            SDO->ODF_arg.object = SDO->extension->object;
-    }
+
+// TODO: Implement extension support in new interface
+    SDO->extension = NULL;
+//    SDO->extension = CO_OD_getCallback(SDO->OD, SDO->object);
+//    if (SDO->extension)
+//    {
+//            SDO->ODF_arg.object = SDO->extension->object;
+//    }
     
     SDO->ODF_arg.data = SDO->databuffer;
 
@@ -480,13 +483,18 @@ uint32_t CO_SDO_readOD(CO_SDO_t *SDO, uint16_t SDOBufferSize){
     }
     /* if domain, Object dictionary function MUST exist */
     else{
-        if(SDO->extension->pODFunc == NULL){
+#if OD_extension
+            if(SDO->extension->pODFunc == NULL){
             return CO_SDO_AB_DEVICE_INCOMPAT;     /* general internal incompatibility in the device */
         }
+#endif
+
     }
 
     /* call Object dictionary function if registered */
     SDO->ODF_arg.reading = true;
+
+#if OD_extension    
     if(SDO->extension->pODFunc != NULL){
         uint32_t abortCode = SDO->extension->pODFunc(&SDO->ODF_arg);
         if(abortCode != 0U){
@@ -498,6 +506,7 @@ uint32_t CO_SDO_readOD(CO_SDO_t *SDO, uint16_t SDOBufferSize){
             return CO_SDO_AB_DEVICE_INCOMPAT;     /* general internal incompatibility in the device */
         }
     }
+#endif
     SDO->ODF_arg.offset += SDO->ODF_arg.dataLength;
     SDO->ODF_arg.firstSegment = false;
 
@@ -566,6 +575,7 @@ uint32_t CO_SDO_writeOD(CO_SDO_t *SDO, uint16_t length){
 
     /* call Object dictionary function if registered */
     SDO->ODF_arg.reading = false;
+#if OD_extension
     if(SDO->extension != NULL){
             if(SDO->extension->pODFunc != NULL){
                     uint32_t abortCode = SDO->extension->pODFunc(&SDO->ODF_arg);
@@ -574,7 +584,7 @@ uint32_t CO_SDO_writeOD(CO_SDO_t *SDO, uint16_t length){
                     }
             }
     }
-
+#endif
     SDO->ODF_arg.offset += SDO->ODF_arg.dataLength;
     SDO->ODF_arg.firstSegment = false;
 

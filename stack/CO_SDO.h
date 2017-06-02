@@ -52,6 +52,7 @@ extern "C" {
 #endif
 
 #include "CO_OD_interface.h"
+#include "CO_driver.h"
         
 /**
  * @defgroup CO_SDO SDO server
@@ -382,6 +383,57 @@ typedef enum {
 } CO_SDO_state_t;
 
 
+/**
+ * Object contains all information about the object being transferred by SDO server.
+ *
+ * Object is used as an argument to @ref CO_SDO_OD_function. It is also
+ * part of the CO_SDO_t object.
+ */
+typedef struct{
+    /** Informative parameter. It may point to object, which is connected
+    with this OD entry. It can be used inside @ref CO_SDO_OD_function, ONLY
+    if it was registered by CO_OD_configure() function before. */
+    void               *object;
+    /** SDO data buffer contains data, which are exchanged in SDO transfer.
+    @ref CO_SDO_OD_function may verify or manipulate that data before (after)
+    they are written to (read from) Object dictionary. Data have the same
+    endianes as processor. Pointer must NOT be changed. (Data up to length
+    can be changed.) */
+    uint8_t            *data;
+    /** Pointer to location in object dictionary, where data are stored.
+    (informative reference to old data, read only). Data have the same
+    endianes as processor. If data type is Domain, this variable is null. */
+    const void         *ODdataStorage;
+    /** Length of data in the above buffer. Read only, except for domain. If
+    data type is domain see @ref CO_SDO_OD_function for special rules by upload. */
+    uint16_t            dataLength;
+    /** Attribute of object in Object dictionary (informative, must NOT be changed). */
+    uint16_t            attribute;
+    /** Pointer to the #CO_SDO_OD_flags_t byte. */
+//    uint8_t            *pFlags;
+    /** Index of object in Object dictionary (informative, must NOT be changed). */
+    uint16_t            index;
+    /** Subindex of object in Object dictionary (informative, must NOT be changed). */
+    uint8_t             subIndex;
+    /** True, if SDO upload is in progress, false if SDO download is in progress. */
+    bool_t              reading;
+    /** Used by domain data type. Indicates the first segment. Variable is informative. */
+    bool_t              firstSegment;
+    /** Used by domain data type. If false by download, then application will
+    receive more segments during SDO communication cycle. If uploading,
+    application may set variable to false, so SDO server will call
+    @ref CO_SDO_OD_function again for filling the next data. */
+    bool_t              lastSegment;
+    /** Used by domain data type. By upload @ref CO_SDO_OD_function may write total
+    data length, so this information will be send in SDO upload initiate phase. It
+    is not necessary to specify this variable. By download this variable contains
+    total data size, if size is indicated in SDO download initiate phase */
+    uint32_t            dataLengthTotal;
+    /** Used by domain data type. In case of multiple segments, this indicates the offset
+    into the buffer this segment starts at. */
+    uint32_t            offset;
+}CO_ODF_arg_t;
+
 
 /**
  * SDO server object.
@@ -405,7 +457,7 @@ typedef struct{
     /** Sequence number of OD entry as returned from CO_OD_find() */
 //    uint16_t            entryNo;
     const void *object;
-    CO_OD_extension_t *extension;
+    void *extension;
     /** CO_ODF_arg_t object with additional variables. Reference to this object
     is passed to @ref CO_SDO_OD_function */
     CO_ODF_arg_t        ODF_arg;
