@@ -181,7 +181,6 @@ void CO_memcpySwap8(void* dest, const void* src){
  * message with correct identifier will be received. For more information and
  * description of parameters see file CO_driver.h.
  */
-//static void CO_SDO_receive(void *object, const CO_CANrxMsg_t *msg){
 void CO_SDO_receive(void *object, const CO_CANrxMsg_t *msg){
     CO_SDO_t *SDO;
 
@@ -219,7 +218,8 @@ void CO_SDO_receive(void *object, const CO_CANrxMsg_t *msg){
 
                 /* copy data */
                 for(i=1; i<8; i++) {
-                    SDO->ODF_arg.data[SDO->bufferOffset++] = msg->data[i]; //SDO->ODF_arg.data is equal as SDO->databuffer
+                        //SDO->ODF_arg.data is equal as SDO->databuffer
+                    SDO->ODF_arg.data[SDO->bufferOffset++] = msg->data[i]; 
                     if(SDO->bufferOffset >= CO_SDO_BUFFER_SIZE) {
                         /* buffer full, break reception */
                         SDO->state = CO_SDO_ST_DOWNLOAD_BL_SUB_RESP;
@@ -258,22 +258,6 @@ void CO_SDO_receive(void *object, const CO_CANrxMsg_t *msg){
  *
  * For more information see file CO_SDO.h.
  */
-//static uint32_t CO_ODF_1200(void *arg){
-//    uint8_t *nodeId;
-//    uint32_t value;
-//    CO_SDO_abortCode_t ret = CO_SDO_AB_NONE;
-//    CO_ODF_arg_t *ODF_arg = arg;
-//    nodeId = (uint8_t*) ODF_arg->object;
-//    value = CO_getUint32(ODF_arg->data);
-//
-//    /* if SDO reading Object dictionary 0x1200, add nodeId to the value */
-//    if((ODF_arg->reading) && (ODF_arg->subIndex > 0U)){
-//        CO_setUint32(ODF_arg->data, value + *nodeId);
-//    }
-//
-//    return ret;
-//}
-
 
 /******************************************************************************/
 CO_ReturnError_t CO_SDO_init(
@@ -357,11 +341,6 @@ uint32_t CO_SDO_initTransfer(CO_SDO_t *SDO, uint16_t index, uint8_t subIndex){
     SDO->ODF_arg.subIndex = subIndex;
 
     /* find object in Object Dictionary */
-//    SDO->entryNo = CO_OD_find(&SDO->OD, index);
-//    if(SDO->entryNo == 0xFFFFU){
-//        return CO_SDO_AB_NOT_EXIST ;     /* object does not exist in OD */
-//    }
-//    const CO_OD_entry_t* object = CO_OD_find(&SDO->OD, index);
     SDO->object = CO_OD_find(SDO->OD, index);
     if (NULL == SDO->object)
     {
@@ -369,34 +348,23 @@ uint32_t CO_SDO_initTransfer(CO_SDO_t *SDO, uint16_t index, uint8_t subIndex){
     }
 
     /* verify existance of subIndex */
-//    if(subIndex > SDO->OD.od[SDO->entryNo].maxSubIndex &&
-//            SDO->OD.od[SDO->entryNo].pData != NULL)
-//    {
-//        return CO_SDO_AB_SUB_UNKNOWN;     /* Sub-index does not exist. */
-//    }
-
     if (subIndex > CO_OD_getMaxSubindex(SDO->object))
     {
             return CO_SDO_AB_SUB_UNKNOWN;     /* Sub-index does not exist. */
     }
     
     /* pointer to data in Object dictionary */
-//    SDO->ODF_arg.ODdataStorage = CO_OD_getDataPointer(&SDO->OD, SDO->entryNo, subIndex);
     SDO->ODF_arg.ODdataStorage = CO_OD_getDataPointer(SDO->object, subIndex);
     
     /* fill ODF_arg */
     SDO->ODF_arg.object = NULL;
-//    SDO->od_callback = CO_OD_getCallbackObj(SDO->OD, SDO->object);
     SDO->od_callback = CO_OD_getCallback(SDO->OD, SDO->object);
   
     SDO->ODF_arg.data = SDO->databuffer;
 
 
-//    SDO->ODF_arg.dataLength = CO_OD_getLength(&SDO->OD, SDO->entryNo, subIndex);
     SDO->ODF_arg.dataLength = CO_OD_getLength(SDO->object, subIndex);
-//    SDO->ODF_arg.attribute = CO_OD_getAttribute(&SDO->OD, SDO->entryNo, subIndex);
     SDO->ODF_arg.attribute = CO_OD_getAttribute(SDO->object, subIndex);
-//    SDO->ODF_arg.pFlags = CO_OD_getFlagsPointer(&SDO->OD, SDO->entryNo, subIndex);
 
     // if DOMAIN, set dataLength
     if ((0 == SDO->ODF_arg.dataLength) && (NULL ==SDO->ODF_arg.ODdataStorage))
@@ -459,17 +427,6 @@ uint32_t CO_SDO_readOD(CO_SDO_t *SDO, uint16_t SDOBufferSize){
             }
 
     }
-//    if(SDO->extension->pODFunc != NULL){
-//        uint32_t abortCode = SDO->extension->pODFunc(&SDO->ODF_arg);
-//        if(abortCode != 0U){
-//            return abortCode;
-//        }
-//
-//        /* dataLength (upadted by pODFunc) must be inside limits */
-//        if((SDO->ODF_arg.dataLength == 0U) || (SDO->ODF_arg.dataLength > SDOBufferSize)){
-//            return CO_SDO_AB_DEVICE_INCOMPAT;     /* general internal incompatibility in the device */
-//        }
-//    }
 
     SDO->ODF_arg.offset += SDO->ODF_arg.dataLength;
     SDO->ODF_arg.firstSegment = false;
@@ -546,15 +503,6 @@ uint32_t CO_SDO_writeOD(CO_SDO_t *SDO, uint16_t length){
                     return abortCode;
             }
     }
-
-//    if(SDO->extension != NULL){
-//            if(SDO->extension->pODFunc != NULL){
-//                    uint32_t abortCode = SDO->extension->pODFunc(&SDO->ODF_arg);
-//                    if(abortCode != 0U){
-//                            return abortCode;
-//                    }
-//            }
-//    }
 
     SDO->ODF_arg.offset += SDO->ODF_arg.dataLength;
     SDO->ODF_arg.firstSegment = false;
@@ -1036,7 +984,7 @@ int8_t CO_SDO_process(
 
                 /* move the beginning of the data buffer */
                 SDO->ODF_arg.data += len;
-//                SDO->ODF_arg.dataLength = CO_OD_getLength(&SDO->OD, SDO->entryNo, SDO->ODF_arg.subIndex) - len;
+
                 const void* object = SDO->object;
                 SDO->ODF_arg.dataLength = CO_OD_getLength(object, SDO->ODF_arg.subIndex) - len;
 
@@ -1189,7 +1137,6 @@ int8_t CO_SDO_process(
                     /* move the beginning of the data buffer */
                     len = SDO->ODF_arg.dataLength; /* length of valid data in buffer */
                     SDO->ODF_arg.data += len;
-//                    SDO->ODF_arg.dataLength = CO_OD_getLength(&SDO->OD, SDO->entryNo, SDO->ODF_arg.subIndex) - len;
 
                     const void * object = SDO->object;
                     SDO->ODF_arg.dataLength = CO_OD_getLength(object, SDO->ODF_arg.subIndex) - len;
