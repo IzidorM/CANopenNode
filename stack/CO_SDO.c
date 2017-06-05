@@ -281,11 +281,7 @@ CO_ReturnError_t CO_SDO_init(
         uint32_t                COB_IDClientToServer,
         uint32_t                COB_IDServerToClient,
         uint16_t                ObjDictIndex_SDOServerParameter,
-//        CO_SDO_t               *parentSDO,
         void                   *OD,
-//        CO_OD_entry_t const     OD[],
-//        uint16_t                ODSize,
-//        CO_OD_extension_t      *ODExtensions,
         uint8_t                 nodeId,
         CO_CANmodule_t         *CANdevRx,
         uint16_t                CANdevRxIdx,
@@ -299,36 +295,7 @@ CO_ReturnError_t CO_SDO_init(
 
     struct CO_OD *od = OD;
     
-    /* configure own object dictionary */
-//    if(parentSDO == NULL){
-//        uint16_t i;
-
-        SDO->ownOD = true;
-//        SDO->OD = OD;
-//        SDO->ODSize = ODSize;
-        SDO->OD = od;
-//        SDO->OD.od_size = od->od_size;
-//        SDO->OD.od_extensions = od->od_extensions;
-
-        // TODO: Move cleaning of extensions to OD init ...
-        
-        /* clear pointers in ODExtensions */
-//        for(i=0U; i<od->od_size; i++){
-//            SDO->OD.od_extensions[i].pODFunc = NULL;
-//            SDO->OD.od_extensions[i].object = NULL;
-//            SDO->OD.od_extensions[i].flags = NULL;
-//        }
-//    }
-//    /* copy object dictionary from parent */
-//    else{
-//        SDO->ownOD = false;
-////        SDO->OD = parentSDO->OD;
-////        SDO->ODSize = parentSDO->ODSize;
-//
-//        SDO->OD.od = parentSDO->OD.od;
-//        SDO->OD.od_size = parentSDO->OD.od_size;
-//        SDO->OD.od_extensions = parentSDO->OD.od_extensions;
-//    }
+    SDO->OD = od;
 
     /* Configure object variables */
     SDO->nodeId = nodeId;
@@ -337,17 +304,12 @@ CO_ReturnError_t CO_SDO_init(
     SDO->pFunctSignal = NULL;
 
 
-    /* Configure Object dictionary entry at index 0x1200 */
-//    if(ObjDictIndex_SDOServerParameter == OD_H1200_SDO_SERVER_PARAM){
-//            //CO_OD_configure(od, ObjDictIndex_SDOServerParameter,
-//            //            CO_ODF_1200, (void*)&SDO->nodeId);
-//    }
-
     if((COB_IDClientToServer & 0x80000000) != 0 || (COB_IDServerToClient & 0x80000000) != 0 ){
         // SDO is invalid
         COB_IDClientToServer = 0;
         COB_IDServerToClient = 0;
     }
+
     /* configure SDO server CAN reception */
     CO_CANrxBufferInit(
             CANdevRx,               /* CAN device */
@@ -424,30 +386,24 @@ uint32_t CO_SDO_initTransfer(CO_SDO_t *SDO, uint16_t index, uint8_t subIndex){
     
     /* fill ODF_arg */
     SDO->ODF_arg.object = NULL;
-//    if(SDO->OD.od_extensions){
-//        CO_OD_extension_t *ext = &SDO->OD.od_extensions[SDO->entryNo];
-//        SDO->ODF_arg.object = ext->object;
-//    }
-
-// TODO: Implement extension support in new interface
-    SDO->extension = NULL;
-//    SDO->extension = CO_OD_getCallback(SDO->OD, SDO->object);
-//    if (SDO->extension)
-//    {
-//            SDO->ODF_arg.object = SDO->extension->object;
-//    }
-    
+//    SDO->od_callback = CO_OD_getCallbackObj(SDO->OD, SDO->object);
+    SDO->od_callback = CO_OD_getCallback(SDO->OD, SDO->object);
+  
     SDO->ODF_arg.data = SDO->databuffer;
 
 
-
-    
 //    SDO->ODF_arg.dataLength = CO_OD_getLength(&SDO->OD, SDO->entryNo, subIndex);
     SDO->ODF_arg.dataLength = CO_OD_getLength(SDO->object, subIndex);
 //    SDO->ODF_arg.attribute = CO_OD_getAttribute(&SDO->OD, SDO->entryNo, subIndex);
     SDO->ODF_arg.attribute = CO_OD_getAttribute(SDO->object, subIndex);
 //    SDO->ODF_arg.pFlags = CO_OD_getFlagsPointer(&SDO->OD, SDO->entryNo, subIndex);
 
+    // if DOMAIN, set dataLength
+    if ((0 == SDO->ODF_arg.dataLength) && (NULL ==SDO->ODF_arg.ODdataStorage))
+    {
+            SDO->ODF_arg.dataLength = CO_SDO_BUFFER_SIZE;
+    }
+    
     SDO->ODF_arg.firstSegment = true;
     SDO->ODF_arg.lastSegment = true;
 
@@ -483,30 +439,38 @@ uint32_t CO_SDO_readOD(CO_SDO_t *SDO, uint16_t SDOBufferSize){
     }
     /* if domain, Object dictionary function MUST exist */
     else{
-#if OD_extension
-            if(SDO->extension->pODFunc == NULL){
+        if(NULL == SDO->od_callback) {
             return CO_SDO_AB_DEVICE_INCOMPAT;     /* general internal incompatibility in the device */
         }
-#endif
-
     }
 
     /* call Object dictionary function if registered */
     SDO->ODF_arg.reading = true;
 
-#if OD_extension    
-    if(SDO->extension->pODFunc != NULL){
-        uint32_t abortCode = SDO->extension->pODFunc(&SDO->ODF_arg);
-        if(abortCode != 0U){
-            return abortCode;
-        }
+    if(NULL != SDO->od_callback) {
+            uint32_t abortCode = SDO->od_callback(&SDO->ODF_arg);
+            if(abortCode != 0U){
+                    return abortCode;
+            }
+            /* dataLength (upadted by pODFunc) must be inside limits */
+            if((SDO->ODF_arg.dataLength == 0U) || (SDO->ODF_arg.dataLength > SDOBufferSize)){
+                    /* general internal incompatibility in the device */
+                    return CO_SDO_AB_DEVICE_INCOMPAT;     
+            }
 
-        /* dataLength (upadted by pODFunc) must be inside limits */
-        if((SDO->ODF_arg.dataLength == 0U) || (SDO->ODF_arg.dataLength > SDOBufferSize)){
-            return CO_SDO_AB_DEVICE_INCOMPAT;     /* general internal incompatibility in the device */
-        }
     }
-#endif
+//    if(SDO->extension->pODFunc != NULL){
+//        uint32_t abortCode = SDO->extension->pODFunc(&SDO->ODF_arg);
+//        if(abortCode != 0U){
+//            return abortCode;
+//        }
+//
+//        /* dataLength (upadted by pODFunc) must be inside limits */
+//        if((SDO->ODF_arg.dataLength == 0U) || (SDO->ODF_arg.dataLength > SDOBufferSize)){
+//            return CO_SDO_AB_DEVICE_INCOMPAT;     /* general internal incompatibility in the device */
+//        }
+//    }
+
     SDO->ODF_arg.offset += SDO->ODF_arg.dataLength;
     SDO->ODF_arg.firstSegment = false;
 
@@ -575,16 +539,23 @@ uint32_t CO_SDO_writeOD(CO_SDO_t *SDO, uint16_t length){
 
     /* call Object dictionary function if registered */
     SDO->ODF_arg.reading = false;
-#if OD_extension
-    if(SDO->extension != NULL){
-            if(SDO->extension->pODFunc != NULL){
-                    uint32_t abortCode = SDO->extension->pODFunc(&SDO->ODF_arg);
-                    if(abortCode != 0U){
-                            return abortCode;
-                    }
+
+    if(NULL != SDO->od_callback) {
+            uint32_t abortCode = SDO->od_callback(&SDO->ODF_arg);
+            if(abortCode != 0U){
+                    return abortCode;
             }
     }
-#endif
+
+//    if(SDO->extension != NULL){
+//            if(SDO->extension->pODFunc != NULL){
+//                    uint32_t abortCode = SDO->extension->pODFunc(&SDO->ODF_arg);
+//                    if(abortCode != 0U){
+//                            return abortCode;
+//                    }
+//            }
+//    }
+
     SDO->ODF_arg.offset += SDO->ODF_arg.dataLength;
     SDO->ODF_arg.firstSegment = false;
 

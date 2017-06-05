@@ -443,8 +443,6 @@ typedef struct{
     uint8_t             CANrxData[8];
     /** SDO data buffer of size #CO_SDO_BUFFER_SIZE. */
     uint8_t             databuffer[CO_SDO_BUFFER_SIZE];
-    /** Internal flag indicates, that this object has own OD */
-    bool_t              ownOD;
     /** Pointer to the @ref CO_SDO_objectDictionary (array) */
 //    const CO_OD_entry_t *OD;
 //    /** Size of the @ref CO_SDO_objectDictionary */
@@ -457,7 +455,7 @@ typedef struct{
     /** Sequence number of OD entry as returned from CO_OD_find() */
 //    uint16_t            entryNo;
     const void *object;
-    void *extension;
+    uint32_t (*od_callback)(void*);
     /** CO_ODF_arg_t object with additional variables. Reference to this object
     is passed to @ref CO_SDO_OD_function */
     CO_ODF_arg_t        ODF_arg;
