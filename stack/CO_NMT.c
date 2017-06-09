@@ -43,7 +43,7 @@
  * to do so, delete this exception statement from your version.
  */
 
-
+#include "CO_Config.h"
 #include "CO_driver.h"
 #include "CO_OD_interface.h"
 #include "CO_NMT.h"
@@ -121,7 +121,7 @@ CO_ReturnError_t CO_NMT_init(
 
     /* produce bootup message */
     CO_CANtx_t TXbuff;      /**< CAN transmit buffer */
-    TXbuff.ident = nodeId;
+    TXbuff.ident = CO_CAN_ID_BOOTUP | nodeId;
     TXbuff.DLC = 1;
     TXbuff.data[0] = 0;
     CO_CANsend(NMT->HB_CANdev, &TXbuff);
