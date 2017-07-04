@@ -172,9 +172,9 @@ typedef struct{
 //    uint16_t            defaultCOB_ID;  /**< From CO_RPDO_init() */
     uint8_t             restrictionFlags;/**< From CO_RPDO_init() */
     /** True, if PDO is enabled and valid */
-    bool_t              valid;
+    bool              valid;
     /** True, if PDO synchronous (transmissionType <= 240) */
-    bool_t              synchronous;
+    bool              synchronous;
     /** Data length of the received PDO message. Calculated from mapping */
     uint8_t             dataLength;
     void * RPDO_mapping_object;
@@ -182,7 +182,7 @@ typedef struct{
     uint8_t            *mapPointer[8];
     uint32_t (*map_callback[8])(void*);
     /** Variable indicates, if new PDO message received from CAN bus. */
-    volatile bool_t     CANrxNew[2];
+    volatile bool     CANrxNew[2];
     /** 8 data bytes of the received message. */
     uint8_t             CANrxData[2][8];
 //    CO_CANmodule_t     *CANdevRx;       /**< From CO_RPDO_init() */
@@ -247,13 +247,13 @@ CO_ReturnError_t CO_RPDO_init(
  * @param RPDO This object.
  * @param syncWas True, if CANopen SYNC message was just received or transmitted.
  */
-void CO_RPDO_process(CO_RPDO_t *RPDO, bool_t syncWas);
+void CO_RPDO_process(CO_RPDO_t *RPDO, bool syncWas);
 
 #ifdef __cplusplus
 }
 #endif /*__cplusplus*/
 
-void CO_PDO_receive(void *object, const CO_CANrxMsg_t *msg);
+int32_t CO_RPDO_receive(void *object, const CO_CANrxMsg_t *msg);
 
 /** @} */
 

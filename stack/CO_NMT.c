@@ -62,7 +62,7 @@
  * message with correct identifier will be received. For more information and
  * description of parameters see file CO_driver.h.
  */
-void CO_NMT_receive(void *object, const CO_CANrxMsg_t *msg){
+int32_t CO_NMT_receive(void *object, const CO_CANrxMsg_t *msg){
     CO_NMT_t *NMT;
     uint8_t nodeId;
 
@@ -74,13 +74,8 @@ void CO_NMT_receive(void *object, const CO_CANrxMsg_t *msg){
         uint8_t command = msg->data[0];
         NMT->requestedState = command; // NMT command will check if command is ok
 
-        //uint8_t currentOperatingState = NMT->operatingState;
-//        if (CO_NMT_is_command(command))
-//        {
-//
-//        }
-
     }
+    return 0;
 }
 
 
@@ -89,13 +84,14 @@ CO_ReturnError_t CO_NMT_init(
         CO_NMT_t               *NMT,
         uint8_t                 nodeId,
         void                    *OD,
-        void (*state_changed_callback)(CO_NMT_internalState_t previous_state, CO_NMT_internalState_t requested_state),
-        CO_CANmodule_t         *NMT_CANdev,
-        uint16_t                NMT_rxIdx, //buffer id
-        uint16_t                CANidRxNMT) // can id
+        void (*state_changed_callback)
+        (CO_NMT_internalState_t previous_state,
+         CO_NMT_internalState_t requested_state),
+        uint16_t                CANidRxNMT, // can id
+        void *CANdev)
 {
     /* verify arguments */
-    if(NMT==NULL || NMT_CANdev==NULL){
+    if(NMT==NULL || CANdev==NULL || NULL == state_changed_callback){
         return CO_ERROR_ILLEGAL_ARGUMENT;
     }
 
@@ -109,14 +105,14 @@ CO_ReturnError_t CO_NMT_init(
     void *nmt_startup = CO_OD_find(NMT->OD, 0x1f80);
     
     /* configure NMT CAN reception */
-    CO_CANrxBufferInit(
-            NMT_CANdev,         /* CAN device */
-            NMT_rxIdx,          /* rx buffer index */
-            CANidRxNMT,         /* CAN identifier */
-            0x7FF,              /* mask */
-            0,                  /* rtr */
-            (void*)NMT,         /* object passed to receive function */
-            CO_NMT_receive);    /* this function will process received message */
+//    CO_CANrxBufferInit(
+//            NMT_CANdev,         /* CAN device */
+//            NMT_rxIdx,          /* rx buffer index */
+//            CANidRxNMT,         /* CAN identifier */
+//            0x7FF,              /* mask */
+//            0,                  /* rtr */
+//            (void*)NMT,         /* object passed to receive function */
+//            CO_NMT_receive);    /* this function will process received message */
 
 
     /* produce bootup message */
@@ -124,7 +120,7 @@ CO_ReturnError_t CO_NMT_init(
     TXbuff.ident = CO_CAN_ID_BOOTUP | nodeId;
     TXbuff.DLC = 1;
     TXbuff.data[0] = 0;
-    CO_CANsend(NMT->HB_CANdev, &TXbuff);
+    co_driver_send(NMT->CANdev, &TXbuff);
 
     if (nmt_startup)
     {
@@ -156,7 +152,7 @@ CO_ReturnError_t CO_NMT_init(
                     NMT->operatingState = CO_NMT_PRE_OPERATIONAL;
     }
             
-
+    
     NMT->state_changed_callback(CO_NMT_INITIALIZING,
                                 NMT->operatingState);
     

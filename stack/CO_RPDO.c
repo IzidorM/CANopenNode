@@ -63,7 +63,7 @@
  * If new message arrives and previous message wasn't processed yet, then
  * previous message will be lost and overwritten by new message. That's OK with PDOs.
  */
-void CO_PDO_receive(void *object, const CO_CANrxMsg_t *msg){
+int32_t CO_RPDO_receive(void *object, const CO_CANrxMsg_t *msg){
     CO_RPDO_t *RPDO;
 
     RPDO = (CO_RPDO_t*)object;   /* this is the correct pointer type of the first argument */
@@ -99,6 +99,7 @@ void CO_PDO_receive(void *object, const CO_CANrxMsg_t *msg){
             RPDO->CANrxNew[0] = true;
 //        }
     }
+    return 0;
 }
 
 /*
@@ -362,20 +363,12 @@ static uint32_t CO_RPDOconfigMap(CO_RPDO_t* RPDO){
 /******************************************************************************/
 CO_ReturnError_t CO_RPDO_init(
         CO_RPDO_t              *RPDO,
-//        CO_EM_t                *em,
         void               *OD,
-//        CO_SYNC_t              *SYNC,
-//        uint8_t                *operatingState,
         uint8_t                 nodeId,
-//        uint16_t                defaultCOB_ID,
         uint8_t                 restrictionFlags,
-//        const CO_RPDOCommPar_t *RPDOCommPar,
-//        const CO_RPDOMapPar_t  *RPDOMapPar,
         uint16_t                idx_RPDOCommPar,
         uint16_t                idx_RPDOMapPar,
         void *CANdev)
-//        CO_CANmodule_t         *CANdevRx,
-//        uint16_t                CANdevRxIdx)
 {
         int32_t err = 0;
     /* verify arguments */
@@ -432,7 +425,7 @@ CO_ReturnError_t CO_RPDO_init(
 
 #define RPDO_CALLS_EXTENSION
 ///******************************************************************************/
-void CO_RPDO_process(CO_RPDO_t *RPDO, bool_t syncWas){
+void CO_RPDO_process(CO_RPDO_t *RPDO, bool syncWas){
 
 //    if(!RPDO->valid || !(*RPDO->operatingState == CO_NMT_OPERATIONAL))
         if(!RPDO->valid)

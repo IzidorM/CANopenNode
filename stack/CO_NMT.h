@@ -131,7 +131,7 @@ typedef struct{
     uint8_t             requestedState; 
     uint8_t             nodeId;         /**< CANopen Node ID of this device */
     void *OD;
-    CO_CANmodule_t     *HB_CANdev;      /**< From CO_NMT_init() */
+    void     *CANdev;      /**< From CO_NMT_init() */
      /**< From CO_NMT_initCallback() or NULL */
     void (*state_changed_callback)(CO_NMT_internalState_t previous_state, CO_NMT_internalState_t requested_state);
 }CO_NMT_t;
@@ -156,9 +156,8 @@ CO_ReturnError_t CO_NMT_init(
         void                    *OD,
         void (*state_changed_callback)(CO_NMT_internalState_t previous_state,
                                        CO_NMT_internalState_t requested_state),
-        CO_CANmodule_t         *NMT_CANdev,
-        uint16_t                NMT_rxIdx, //buffer id
-        uint16_t                CANidRxNMT); // can id
+        uint16_t                CANidRxNMT, // can id
+        void *CANdev);
 
 /**
  * Process received NMT and produce Heartbeat messages.
@@ -192,7 +191,7 @@ CO_NMT_internalState_t CO_NMT_getInternalState(
         CO_NMT_t               *NMT);
 
 
-void CO_NMT_receive(void *object, const CO_CANrxMsg_t *msg);
+int32_t CO_NMT_receive(void *object, const CO_CANrxMsg_t *msg);
         
 #ifdef __cplusplus
 }
