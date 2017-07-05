@@ -100,7 +100,7 @@ CO_ReturnError_t CO_NMT_init(
     NMT->nodeId                 = nodeId;
     NMT->OD = OD;
     NMT->state_changed_callback = state_changed_callback;
-
+    NMT->CANdev = CANdev;
     // Does the device have startup capabilities
     void *nmt_startup = CO_OD_find(NMT->OD, 0x1f80);
     
