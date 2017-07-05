@@ -127,8 +127,9 @@ typedef enum{
  * @ref CO_NMT_statusLEDdiodes. Object is initialized by CO_NMT_init().
  */
 typedef struct{
-    uint8_t             operatingState; /**< See @ref CO_NMT_internalState_t */
-    uint8_t             requestedState; 
+    uint8_t             operating_state; /**< See @ref CO_NMT_internalState_t */
+    uint8_t             requested_state;
+    uint8_t             previous_requested_state; 
     uint8_t             nodeId;         /**< CANopen Node ID of this device */
     void *OD;
     void     *CANdev;      /**< From CO_NMT_init() */

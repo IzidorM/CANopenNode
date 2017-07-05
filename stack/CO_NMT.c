@@ -72,7 +72,7 @@ int32_t CO_NMT_receive(void *object, const CO_CANrxMsg_t *msg){
 
     if((msg->DLC == 2) && ((nodeId == 0) || (nodeId == NMT->nodeId))){
         uint8_t command = msg->data[0];
-        NMT->requestedState = command; // NMT command will check if command is ok
+        NMT->requested_state = command; // NMT command will check if command is ok
 
     }
     return 0;
@@ -96,7 +96,7 @@ CO_ReturnError_t CO_NMT_init(
     }
 
     /* Configure object variables */
-    NMT->operatingState         = CO_NMT_INITIALIZING;
+    NMT->operating_state         = CO_NMT_INITIALIZING;
     NMT->nodeId                 = nodeId;
     NMT->OD = OD;
     NMT->state_changed_callback = state_changed_callback;
@@ -132,7 +132,7 @@ CO_ReturnError_t CO_NMT_init(
             }
             else if (0x8 == configuration)
             {
-                    NMT->operatingState = CO_NMT_OPERATIONAL;
+                    NMT->operating_state = CO_NMT_OPERATIONAL;
             }
             else if (0x22 == configuration)
             {
@@ -144,17 +144,17 @@ CO_ReturnError_t CO_NMT_init(
             }
             else
             {
-                    NMT->operatingState = CO_NMT_PRE_OPERATIONAL;
+                    NMT->operating_state = CO_NMT_PRE_OPERATIONAL;
             }
     }
     else
     {
-                    NMT->operatingState = CO_NMT_PRE_OPERATIONAL;
+                    NMT->operating_state = CO_NMT_PRE_OPERATIONAL;
     }
             
     
     NMT->state_changed_callback(CO_NMT_INITIALIZING,
-                                NMT->operatingState);
+                                NMT->operating_state);
     
     return CO_ERROR_NO;
 }
@@ -163,46 +163,47 @@ CO_ReturnError_t CO_NMT_init(
 CO_NMT_reset_cmd_t CO_NMT_process(CO_NMT_t *NMT)
 {
         CO_NMT_reset_cmd_t r = CO_RESET_NOT;
-        if (NMT->requestedState != NMT->operatingState)
+        if (NMT->requested_state != NMT->previous_requested_state)
         {
-                uint8_t current_operating_state = NMT->operatingState;
-                switch(NMT->requestedState) {
+                uint8_t current_operating_state = NMT->operating_state;
+                switch(NMT->requested_state) {
                 case CO_NMT_ENTER_OPERATIONAL:
-                        NMT->operatingState = CO_NMT_OPERATIONAL;
+                        NMT->operating_state = CO_NMT_OPERATIONAL;
                         if (NMT->state_changed_callback)
                         {
                                 NMT->state_changed_callback(current_operating_state,
-                                                            NMT->operatingState);
+                                                            NMT->operating_state);
                         }
                         break;
                 case CO_NMT_ENTER_STOPPED:
-                        NMT->operatingState = CO_NMT_STOPPED;
+                        NMT->operating_state = CO_NMT_STOPPED;
                         if (NMT->state_changed_callback)
                         {
                                 NMT->state_changed_callback(current_operating_state,
-                                                            NMT->operatingState);
+                                                            NMT->operating_state);
                         }
                         break;
                 case CO_NMT_ENTER_PRE_OPERATIONAL:
-                        NMT->operatingState = CO_NMT_PRE_OPERATIONAL;
+                        NMT->operating_state = CO_NMT_PRE_OPERATIONAL;
                         if (NMT->state_changed_callback)
                         {
                                 NMT->state_changed_callback(current_operating_state,
-                                                            NMT->operatingState);
+                                                            NMT->operating_state);
                         }
                         break;
                 case CO_NMT_RESET_NODE:
                         r = CO_RESET_APP;
-                        NMT->operatingState = CO_NMT_INITIALIZING;
+                        NMT->operating_state = CO_NMT_INITIALIZING;
                         break;
                 case CO_NMT_RESET_COMMUNICATION:
                         r = CO_RESET_COMM;
-                        NMT->operatingState = CO_NMT_INITIALIZING;
+                        NMT->operating_state = CO_NMT_INITIALIZING;
                         break;
                 default:
                         // TODO: What to do if unvalid nmt command is received?
                         break;
                 }
+                NMT->previous_requested_state = NMT->requested_state;
         }
     
     return r;
@@ -212,7 +213,7 @@ CO_NMT_reset_cmd_t CO_NMT_process(CO_NMT_t *NMT)
 CO_NMT_internalState_t CO_NMT_getInternalState(CO_NMT_t *NMT)
 {
     if(NMT != NULL){
-        return NMT->operatingState;
+        return NMT->operating_state;
     }
     return CO_NMT_INITIALIZING;
 }
