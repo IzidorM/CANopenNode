@@ -9,7 +9,9 @@
 #include "CO_NMT.h"
 #include "CO_RPDO.h"
 
-#define MALLOC malloc
+#include "mem.h"
+
+#define MALLOC mem_maloc_static
 
 uint32_t     COB_IDUsedByRPDO = CO_CAN_ID_TPDO_1;
 uint8_t      transmissionType = 0x1;
@@ -106,7 +108,7 @@ struct CO_core *CO_init(uint32_t node_id,
         void *OD = NULL;
 
         // CAN interface
-        void *CANdev = (void *) 0x1234;
+//        void *CANdev = (void *) 0x1234;
 
         // init OD
         struct con_od_list_node_var *device_type;
@@ -136,7 +138,7 @@ struct CO_core *CO_init(uint32_t node_id,
         {
                 return NULL;
         }
-        err = (int32_t) co_driver_register_callback(CO_CAN_ID_NMT_SERVICE + node_id,
+        err = (int32_t) co_driver_register_callback(CO_CAN_ID_NMT_SERVICE,
                                                     CO_NMT_receive,
                                                     &CO_core.NMT);
         if (err)
