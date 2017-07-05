@@ -9,6 +9,8 @@
 #include "CO_NMT.h"
 #include "CO_RPDO.h"
 
+#define MALLOC malloc
+
 uint32_t     COB_IDUsedByRPDO = CO_CAN_ID_TPDO_1;
 uint8_t      transmissionType = 0x1;
 uint16_t     inhibitTime = 0x0102;
@@ -31,7 +33,7 @@ void *make_rpdo_od_entries(void *OD)
         int32_t err;
 
         struct con_od_record_entry *OD_1400_subelements;
-        OD_1400_subelements = malloc(sizeof(struct con_od_record_entry) * 2);
+        OD_1400_subelements = MALLOC(sizeof(struct con_od_record_entry) * 2);
         
         INIT_RECORD_SUBENTRY(&OD_1400_subelements[0],
                              OD_TYPE_UINT32,
@@ -44,7 +46,7 @@ void *make_rpdo_od_entries(void *OD)
                              &transmissionType, "", "");
 
         struct con_od_list_node_record *OD_1400;
-        OD_1400 = malloc(sizeof(struct con_od_list_node_record));
+        OD_1400 = MALLOC(sizeof(struct con_od_list_node_record));
         
         INIT_OD_ENTRY_RECORD(OD_1400, 0x1400, &OD_1400_subelements[0], 2, "", "");
         err = con_od_add_element_to_od(&OD, OD_1400);
@@ -54,7 +56,7 @@ void *make_rpdo_od_entries(void *OD)
         }
 
         struct con_od_record_entry *OD_1600_subelements;
-        OD_1600_subelements = malloc(sizeof(struct con_od_record_entry) * 8);
+        OD_1600_subelements = MALLOC(sizeof(struct con_od_record_entry) * 8);
         uint32_t i;
         for (i = 0; 8 > i; i++)
         {
@@ -65,7 +67,7 @@ void *make_rpdo_od_entries(void *OD)
         }
 
         struct con_od_list_node_record *OD_1600;
-        OD_1600 = malloc(sizeof(struct con_od_list_node_record));
+        OD_1600 = MALLOC(sizeof(struct con_od_list_node_record));
         INIT_OD_ENTRY_RECORD(OD_1600, 0x1600, &OD_1600_subelements[0],
                              0, "", "");
 
@@ -83,7 +85,7 @@ int32_t make_nmt_od_entries(void *OD)
 {
         int32_t err;
         struct con_od_list_node_var *nmt_automatic_startup;
-        nmt_automatic_startup = malloc(sizeof(struct con_od_list_node_var));
+        nmt_automatic_startup = MALLOC(sizeof(struct con_od_list_node_var));
         
 
         INIT_OD_ENTRY_VAR(nmt_automatic_startup, 0x1f80, OD_TYPE_UINT32, CO_ODA_WRITEABLE,
@@ -108,7 +110,7 @@ struct CO_core *CO_init(uint32_t node_id,
 
         // init OD
         struct con_od_list_node_var *device_type;
-        device_type = malloc(sizeof(struct con_od_list_node_var));
+        device_type = MALLOC(sizeof(struct con_od_list_node_var));
         INIT_OD_ENTRY_VAR(device_type, 0x1000, OD_TYPE_UINT32, CO_ODA_READABLE,
                           &device_type_data, NULL, NULL);
 
