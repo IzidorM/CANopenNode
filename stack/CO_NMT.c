@@ -132,7 +132,10 @@ CO_ReturnError_t CO_NMT_init(
             }
             else if (0x8 == configuration)
             {
+                    NMT->requested_state = CO_NMT_ENTER_OPERATIONAL;
+                    NMT->previous_requested_state = CO_NMT_ENTER_OPERATIONAL;
                     NMT->operating_state = CO_NMT_OPERATIONAL;
+
             }
             else if (0x22 == configuration)
             {
@@ -144,12 +147,16 @@ CO_ReturnError_t CO_NMT_init(
             }
             else
             {
+                    NMT->requested_state = CO_NMT_ENTER_PRE_OPERATIONAL;
+                    NMT->previous_requested_state = CO_NMT_ENTER_PRE_OPERATIONAL;
                     NMT->operating_state = CO_NMT_PRE_OPERATIONAL;
             }
     }
     else
     {
-                    NMT->operating_state = CO_NMT_PRE_OPERATIONAL;
+            NMT->requested_state = CO_NMT_ENTER_PRE_OPERATIONAL;
+            NMT->previous_requested_state = CO_NMT_ENTER_PRE_OPERATIONAL;
+            NMT->operating_state = CO_NMT_PRE_OPERATIONAL;
     }
             
     
