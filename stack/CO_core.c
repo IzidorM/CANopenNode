@@ -5,13 +5,14 @@
 #include "CO_Config.h"
 #include "CO_OD_interface.h"
 #include "CO_driver.h"
+#include "CO_core.h"
+//#include "mem.h"
+//
+//#define MALLOC mem_maloc_static
+#define MALLOC malloc
 
-#include "CO_NMT.h"
-#include "CO_RPDO.h"
-
-#include "mem.h"
-
-#define MALLOC mem_maloc_static
+uint32_t COB_IDClientToServer = 0x600;
+uint32_t COB_IDServerToClient = 0x580;
 
 uint32_t     COB_IDUsedByRPDO = CO_CAN_ID_TPDO_1;
 uint8_t      transmissionType = 0x1;
@@ -21,16 +22,10 @@ uint16_t     eventTimer = 0x0405;
 uint8_t      SYNCStartValue = 0x6;
 uint32_t     mappedObjects[8];
 
-struct CO_core {
-        void *CAN_DRIVER;
-        void *OD;
-        CO_NMT_t NMT;
-        CO_RPDO_t RPDO;
-};
 
 struct CO_core CO_core;
 
-void *make_rpdo_od_entries(void *OD)
+int32_t make_rpdo_od_entries(void *OD)
 {
         int32_t err;
 
@@ -54,7 +49,7 @@ void *make_rpdo_od_entries(void *OD)
         err = con_od_add_element_to_od(&OD, OD_1400);
         if (err)
         {
-                return NULL;
+                return err;
         }
 
         struct con_od_record_entry *OD_1600_subelements;
@@ -76,11 +71,40 @@ void *make_rpdo_od_entries(void *OD)
         err = con_od_add_element_to_od(&OD, OD_1600);
         if (err)
         {
-                return NULL;
+                return err;
         }
 
-        return OD;
+        return err;
 }
+
+int32_t make_sdo_od_entries(void *OD)
+{
+
+        struct con_od_record_entry *OD_1200_subelements;
+        OD_1200_subelements = MALLOC(sizeof(struct con_od_record_entry)*2);
+        INIT_RECORD_SUBENTRY(&OD_1200_subelements[0],
+                             OD_TYPE_UINT32,
+                             CO_ODA_WRITEABLE | CO_ODA_READABLE,
+                             &COB_IDClientToServer, "", "");
+
+        INIT_RECORD_SUBENTRY(&OD_1200_subelements[1],
+                             OD_TYPE_UINT32,
+                             CO_ODA_WRITEABLE | CO_ODA_READABLE,
+                             &COB_IDServerToClient, "", "");
+
+        struct con_od_list_node_record *OD_1200;
+        OD_1200 = MALLOC(sizeof(struct con_od_list_node_record));
+        INIT_OD_ENTRY_RECORD(OD_1200, 0x1200, &OD_1200_subelements[0], 2, "", "");
+
+        int32_t err = con_od_add_element_to_od(&OD, OD_1200);
+        if (err)
+        {
+                return err;
+        }
+
+        return 0;
+}
+
 
 uint32_t nmt_startup = 0; // no automatic startup capabilities
 int32_t make_nmt_od_entries(void *OD)
@@ -105,7 +129,6 @@ struct CO_core *CO_init(uint32_t node_id,
                          CO_NMT_internalState_t requested_state))
 {
         int32_t err;
-        void *OD = NULL;
 
         // CAN interface
 //        void *CANdev = (void *) 0x1234;
@@ -116,12 +139,12 @@ struct CO_core *CO_init(uint32_t node_id,
         INIT_OD_ENTRY_VAR(device_type, 0x1000, OD_TYPE_UINT32, CO_ODA_READABLE,
                           &device_type_data, NULL, NULL);
 
-        OD = &device_type;
+        CO_core.OD = device_type;
 //        err = con_od_add_element_to_od(OD, device_type);
 
         
         // init NMT
-        err = make_nmt_od_entries(OD);
+        err = make_nmt_od_entries(CO_core.OD);
         if (err)
         {
                 return NULL;
@@ -130,7 +153,7 @@ struct CO_core *CO_init(uint32_t node_id,
         err = CO_NMT_init(
                 &CO_core.NMT,
                 node_id,
-                OD,
+                CO_core.OD,
                 nmt_state_changed_callback,
                 CO_CAN_ID_NMT_SERVICE,
                 can_driver);
@@ -148,7 +171,34 @@ struct CO_core *CO_init(uint32_t node_id,
 
 
         // init SDO
+        err = make_sdo_od_entries(CO_core.OD);
+        if (err)
+        {
+                return NULL;
+        }
 
+                err = CO_SDO_init(
+                &CO_core.SDO,
+                CO_CAN_ID_RSDO, //0x600,
+                CO_CAN_ID_TSDO, //0x580,
+                0x1200, //OD_H1200_SDO_SERVER_PARAM,
+                CO_core.OD,
+                node_id,
+                (void *) 0x1234);
+        if (err)
+        {
+                return NULL;
+        }
+
+        err = (int32_t) co_driver_register_callback(CO_CAN_ID_RSDO + node_id,
+                                                    CO_SDO_receive,
+                                                    &CO_core.SDO);
+        if (err)
+        {
+                return NULL;
+        }
+
+        
         // init RPDO
 //        CO_core.OD = make_rpdo_od_entries(OD);
 //        if (NULL == CO_core.OD)

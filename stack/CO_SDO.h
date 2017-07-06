@@ -409,6 +409,8 @@ typedef struct{
     is passed to @ref CO_SDO_OD_function */
     CO_ODF_arg_t        ODF_arg;
     /** From CO_SDO_init() */
+    uint32_t                COB_IDClientToServer;
+    uint32_t                COB_IDServerToClient;
     uint8_t             nodeId;
     /** Current internal state of the SDO server state machine #CO_SDO_state_t */
     CO_SDO_state_t      state;
@@ -419,21 +421,18 @@ typedef struct{
     /** Number of segments per block with 1 <= blksize <= 127 */
     uint8_t             blksize;
     /** True, if CRC calculation by block transfer is enabled */
-    bool_t              crcEnabled;
+    bool              crcEnabled;
     /** Calculated CRC code */
     uint16_t            crc;
     /** Length of data in the last segment in block upload */
     uint8_t             lastLen;
     /** Indication end of block transfer */
-    bool_t              endOfTransfer;
+    bool              endOfTransfer;
     /** Variable indicates, if new SDO message received from CAN bus */
-    bool_t              CANrxNew;
+    bool              CANrxNew;
     /** From CO_SDO_initCallback() or NULL */
     void              (*pFunctSignal)(void);
-    /** From CO_SDO_init() */
-    CO_CANmodule_t     *CANdevTx;
-    /** CAN transmit buffer inside CANdev for CAN tx message */
-    CO_CANtx_t         *CANtxBuff;
+    void *CANdev;
     struct CO_OD *OD;
 }CO_SDO_t;
 
@@ -562,11 +561,7 @@ CO_ReturnError_t CO_SDO_init(
 //        uint16_t                ODSize,
 //        CO_OD_extension_t       ODExtensions[],
         uint8_t                 nodeId,
-        CO_CANmodule_t         *CANdevRx,
-        uint16_t                CANdevRxIdx,
-        CO_CANmodule_t         *CANdevTx,
-        uint16_t                CANdevTxIdx);
-
+        void *CANdev);
 
 /**
  * Initialize SDOrx callback function.
@@ -601,7 +596,7 @@ void CO_SDO_initCallback(
  */
 int8_t CO_SDO_process(
         CO_SDO_t               *SDO,
-        bool_t                  NMTisPreOrOperational,
+        bool                  NMTisPreOrOperational,
         uint16_t                timeDifference_ms,
         uint16_t                SDOtimeoutTime,
         uint16_t               *timerNext_ms);
@@ -650,8 +645,8 @@ uint32_t CO_SDO_readOD(CO_SDO_t *SDO, uint16_t SDOBufferSize);
  */
 uint32_t CO_SDO_writeOD(CO_SDO_t *SDO, uint16_t length);
 
-// used for testing only
-void CO_SDO_receive(void *object, const CO_CANrxMsg_t *msg);
+
+int32_t CO_SDO_receive(void *object, const CO_CANrxMsg_t *msg);
         
 #ifdef __cplusplus
 }

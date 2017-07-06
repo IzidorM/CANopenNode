@@ -43,7 +43,7 @@
  * to do so, delete this exception statement from your version.
  */
 
-
+#include <string.h> //we need memset
 #include "CO_driver.h"
 #include "CO_SDO.h"
 #include "crc16-ccitt.h"
@@ -181,7 +181,8 @@ void CO_memcpySwap8(void* dest, const void* src){
  * message with correct identifier will be received. For more information and
  * description of parameters see file CO_driver.h.
  */
-void CO_SDO_receive(void *object, const CO_CANrxMsg_t *msg){
+int32_t CO_SDO_receive(void *object, const CO_CANrxMsg_t *msg)
+{
     CO_SDO_t *SDO;
 
     SDO = (CO_SDO_t*)object;   /* this is the correct pointer type of the first argument */
@@ -249,6 +250,7 @@ void CO_SDO_receive(void *object, const CO_CANrxMsg_t *msg){
             SDO->pFunctSignal();
         }
     }
+    return 0;
 }
 
 
@@ -267,13 +269,10 @@ CO_ReturnError_t CO_SDO_init(
         uint16_t                ObjDictIndex_SDOServerParameter,
         void                   *OD,
         uint8_t                 nodeId,
-        CO_CANmodule_t         *CANdevRx,
-        uint16_t                CANdevRxIdx,
-        CO_CANmodule_t         *CANdevTx,
-        uint16_t                CANdevTxIdx)
+        void * CANdev)
 {
     /* verify arguments */
-    if(SDO==NULL || CANdevRx==NULL || CANdevTx==NULL || OD == NULL){
+    if(SDO==NULL || NULL == CANdev || OD == NULL){
         return CO_ERROR_ILLEGAL_ARGUMENT;
     }
 
@@ -282,42 +281,21 @@ CO_ReturnError_t CO_SDO_init(
     SDO->OD = od;
 
     /* Configure object variables */
+    SDO->COB_IDClientToServer = COB_IDClientToServer;
+    SDO->COB_IDServerToClient = COB_IDServerToClient;
     SDO->nodeId = nodeId;
     SDO->state = CO_SDO_ST_IDLE;
     SDO->CANrxNew = false;
     SDO->pFunctSignal = NULL;
-
+    SDO->CANdev = CANdev;
 
     if((COB_IDClientToServer & 0x80000000) != 0 || (COB_IDServerToClient & 0x80000000) != 0 ){
         // SDO is invalid
         COB_IDClientToServer = 0;
         COB_IDServerToClient = 0;
     }
-
-    /* configure SDO server CAN reception */
-    CO_CANrxBufferInit(
-            CANdevRx,               /* CAN device */
-            CANdevRxIdx,            /* rx buffer index */
-            COB_IDClientToServer,   /* CAN identifier */
-            0x7FF,                  /* mask */
-            0,                      /* rtr */
-            (void*)SDO,             /* object passed to receive function */
-            CO_SDO_receive);        /* this function will process received message */
-
-    /* configure SDO server CAN transmission */
-    SDO->CANdevTx = CANdevTx;
-    SDO->CANtxBuff = CO_CANtxBufferInit(
-            CANdevTx,               /* CAN device */
-            CANdevTxIdx,            /* index of specific buffer inside CAN module */
-            COB_IDServerToClient,   /* CAN identifier */
-            0,                      /* rtr */
-            8,                      /* number of data bytes */
-            0);                     /* synchronous message flag bit */
-
-    if (NULL == SDO->CANtxBuff)
-    {
-            return  CO_ERROR_OUT_OF_MEMORY;
-    }
+    
+    
     return CO_ERROR_NO;
 }
 
@@ -401,9 +379,9 @@ uint32_t CO_SDO_readOD(CO_SDO_t *SDO, uint16_t SDOBufferSize){
 
     /* copy data from OD to SDO buffer if not domain */
     if(ODdata != NULL){
-        CO_LOCK_OD();
+//        CO_LOCK_OD();
         while(length--) *(SDObuffer++) = *(ODdata++);
-        CO_UNLOCK_OD();
+//        CO_UNLOCK_OD();
     }
     /* if domain, Object dictionary function MUST exist */
     else{
@@ -455,7 +433,7 @@ uint32_t CO_SDO_readOD(CO_SDO_t *SDO, uint16_t SDOBufferSize){
 uint32_t CO_SDO_writeOD(CO_SDO_t *SDO, uint16_t length){
     uint8_t *SDObuffer = SDO->ODF_arg.data;
     uint8_t *ODdata = (uint8_t*)SDO->ODF_arg.ODdataStorage;
-    bool_t exception_1003 = false;
+    bool exception_1003 = false;
 
     /* Special exception: Object 1003,00 should be writable,
      * but only by Object dictionary function. */
@@ -509,11 +487,11 @@ uint32_t CO_SDO_writeOD(CO_SDO_t *SDO, uint16_t length){
 
     /* copy data from SDO buffer to OD if not domain */
     if(ODdata != NULL && exception_1003 == false){
-        CO_LOCK_OD();
+//        CO_LOCK_OD();
         while(length--){
             *(ODdata++) = *(SDObuffer++);
         }
-        CO_UNLOCK_OD();
+//        CO_UNLOCK_OD();
     }
 
     return 0;
@@ -522,28 +500,42 @@ uint32_t CO_SDO_writeOD(CO_SDO_t *SDO, uint16_t length){
 
 /******************************************************************************/
 static void CO_SDO_abort(CO_SDO_t *SDO, uint32_t code){
-    SDO->CANtxBuff->data[0] = 0x80;
-    SDO->CANtxBuff->data[1] = SDO->ODF_arg.index & 0xFF;
-    SDO->CANtxBuff->data[2] = (SDO->ODF_arg.index>>8) & 0xFF;
-    SDO->CANtxBuff->data[3] = SDO->ODF_arg.subIndex;
-    CO_memcpySwap4(&SDO->CANtxBuff->data[4], &code);
-    SDO->state = CO_SDO_ST_IDLE;
-    SDO->CANrxNew = false;
-    CO_CANsend(SDO->CANdevTx, SDO->CANtxBuff);
+        CO_CANtx_t TXbuff;      /**< CAN transmit buffer */
+        TXbuff.ident = SDO->COB_IDServerToClient + SDO->nodeId;
+        TXbuff.DLC = 1;
+
+        TXbuff.data[0] = 0x80;
+        TXbuff.data[1] = SDO->ODF_arg.index & 0xFF;
+        TXbuff.data[2] = (SDO->ODF_arg.index>>8) & 0xFF;
+        TXbuff.data[3] = SDO->ODF_arg.subIndex;
+        CO_memcpySwap4(&TXbuff.data[4], &code);
+        SDO->state = CO_SDO_ST_IDLE;
+        SDO->CANrxNew = false;
+        co_driver_send(SDO->CANdev, &TXbuff);
+        
+//    SDO->CANtxBuff->data[0] = 0x80;
+//    SDO->CANtxBuff->data[1] = SDO->ODF_arg.index & 0xFF;
+//    SDO->CANtxBuff->data[2] = (SDO->ODF_arg.index>>8) & 0xFF;
+//    SDO->CANtxBuff->data[3] = SDO->ODF_arg.subIndex;
+//    CO_memcpySwap4(&SDO->CANtxBuff->data[4], &code);
+//    SDO->state = CO_SDO_ST_IDLE;
+//    SDO->CANrxNew = false;
+//    CO_CANsend(SDO->CANdevTx, SDO->CANtxBuff);
 }
 
 
 /******************************************************************************/
 int8_t CO_SDO_process(
         CO_SDO_t               *SDO,
-        bool_t                  NMTisPreOrOperational,
+        bool                  NMTisPreOrOperational,
         uint16_t                timeDifference_ms,
         uint16_t                SDOtimeoutTime,
         uint16_t               *timerNext_ms)
 {
     CO_SDO_state_t state = CO_SDO_ST_IDLE;
-    bool_t timeoutSubblockDownolad = false;
-    bool_t sendResponse = false;
+    bool timeoutSubblockDownolad = false;
+    bool sendResponse = false;
+    CO_CANtx_t TXbuff;      /**< CAN transmit buffer */
 
     /* return if idle */
     if((SDO->state == CO_SDO_ST_IDLE) && (!SDO->CANrxNew)){
@@ -558,7 +550,7 @@ int8_t CO_SDO_process(
     }
 
     /* Is something new to process? */
-    if((!SDO->CANtxBuff->bufferFull) && ((SDO->CANrxNew) || (SDO->state == CO_SDO_ST_UPLOAD_BL_SUBBLOCK))){
+    if(((SDO->CANrxNew) || (SDO->state == CO_SDO_ST_UPLOAD_BL_SUBBLOCK))){
         uint8_t CCS = SDO->CANrxData[0] >> 5;   /* Client command specifier */
 
         /* reset timeout */
@@ -566,8 +558,7 @@ int8_t CO_SDO_process(
             SDO->timeoutTimer = 0;
 
         /* clear response buffer */
-        SDO->CANtxBuff->data[0] = SDO->CANtxBuff->data[1] = SDO->CANtxBuff->data[2] = SDO->CANtxBuff->data[3] = 0;
-        SDO->CANtxBuff->data[4] = SDO->CANtxBuff->data[5] = SDO->CANtxBuff->data[6] = SDO->CANtxBuff->data[7] = 0;
+        memset(&TXbuff.data[0], 0, 8);
 
         /* Is abort from client? */
         if((SDO->CANrxNew) && (SDO->CANrxData[0] == CCS_ABORT)){
@@ -640,7 +631,7 @@ int8_t CO_SDO_process(
         SDO->timeoutTimer += timeDifference_ms;
     }
     if(SDO->timeoutTimer >= SDOtimeoutTime){
-        if((SDO->state == CO_SDO_ST_DOWNLOAD_BL_SUBBLOCK) && (SDO->sequence != 0) && (!SDO->CANtxBuff->bufferFull)){
+        if((SDO->state == CO_SDO_ST_DOWNLOAD_BL_SUBBLOCK) && (SDO->sequence != 0)){
             timeoutSubblockDownolad = true;
             state = CO_SDO_ST_DOWNLOAD_BL_SUB_RESP;
         }
@@ -659,14 +650,14 @@ int8_t CO_SDO_process(
     switch(state){
         uint32_t abortCode;
         uint16_t len, i;
-        bool_t lastSegmentInSubblock;
+        bool lastSegmentInSubblock;
 
         case CO_SDO_ST_DOWNLOAD_INITIATE:{
             /* default response */
-            SDO->CANtxBuff->data[0] = 0x60;
-            SDO->CANtxBuff->data[1] = SDO->CANrxData[1];
-            SDO->CANtxBuff->data[2] = SDO->CANrxData[2];
-            SDO->CANtxBuff->data[3] = SDO->CANrxData[3];
+            TXbuff.data[0] = 0x60;
+            TXbuff.data[1] = SDO->CANrxData[1];
+            TXbuff.data[2] = SDO->CANrxData[2];
+            TXbuff.data[3] = SDO->CANrxData[3];
 
             /* Expedited transfer */
             if((SDO->CANrxData[0] & 0x02U) != 0U){
@@ -773,7 +764,9 @@ int8_t CO_SDO_process(
             }
 
             /* download segment response and alternate toggle bit */
-            SDO->CANtxBuff->data[0] = 0x20 | (SDO->sequence ? 0x10 : 0x00);
+//            SDO->CANtxBuff->data[0] = 0x20 | (SDO->sequence ? 0x10 : 0x00);
+            TXbuff.data[0] = 0x20 | (SDO->sequence ? 0x10 : 0x00);
+                        
             SDO->sequence = (SDO->sequence) ? 0 : 1;
             sendResponse = true;
             break;
@@ -787,14 +780,14 @@ int8_t CO_SDO_process(
             }
 
             /* prepare response */
-            SDO->CANtxBuff->data[0] = 0xA4;
-            SDO->CANtxBuff->data[1] = SDO->CANrxData[1];
-            SDO->CANtxBuff->data[2] = SDO->CANrxData[2];
-            SDO->CANtxBuff->data[3] = SDO->CANrxData[3];
+            TXbuff.data[0] = 0xA4;
+            TXbuff.data[1] = SDO->CANrxData[1];
+            TXbuff.data[2] = SDO->CANrxData[2];
+            TXbuff.data[3] = SDO->CANrxData[3];
 
             /* blksize */
             SDO->blksize = (CO_SDO_BUFFER_SIZE > (7*127)) ? 127 : (CO_SDO_BUFFER_SIZE / 7);
-            SDO->CANtxBuff->data[4] = SDO->blksize;
+            TXbuff.data[4] = SDO->blksize;
 
             /* is CRC enabled */
             SDO->crcEnabled = (SDO->CANrxData[0] & 0x04) ? true : false;
@@ -833,8 +826,8 @@ int8_t CO_SDO_process(
                         ((SDO->CANrxData[0] & 0x80U) == 0x80U)) ? true : false;
 
             /* prepare response */
-            SDO->CANtxBuff->data[0] = 0xA2;
-            SDO->CANtxBuff->data[1] = SDO->sequence;
+            TXbuff.data[0] = 0xA2;
+            TXbuff.data[1] = SDO->sequence;
             SDO->sequence = 0;
 
             /* empty buffer in domain data type if not last segment */
@@ -859,7 +852,7 @@ int8_t CO_SDO_process(
             /* blksize */
             len = CO_SDO_BUFFER_SIZE - SDO->bufferOffset;
             SDO->blksize = (len > (7*127)) ? 127 : (len / 7);
-            SDO->CANtxBuff->data[2] = SDO->blksize;
+            TXbuff.data[2] = SDO->blksize;
 
             /* set next state */
             if(lastSegmentInSubblock) {
@@ -912,7 +905,7 @@ int8_t CO_SDO_process(
             }
 
             /* send response */
-            SDO->CANtxBuff->data[0] = 0xA1;
+            TXbuff.data[0] = 0xA1;
             SDO->state = CO_SDO_ST_IDLE;
             sendResponse = true;
             break;
@@ -920,16 +913,16 @@ int8_t CO_SDO_process(
 
         case CO_SDO_ST_UPLOAD_INITIATE:{
             /* default response */
-            SDO->CANtxBuff->data[1] = SDO->CANrxData[1];
-            SDO->CANtxBuff->data[2] = SDO->CANrxData[2];
-            SDO->CANtxBuff->data[3] = SDO->CANrxData[3];
+            TXbuff.data[1] = SDO->CANrxData[1];
+            TXbuff.data[2] = SDO->CANrxData[2];
+            TXbuff.data[3] = SDO->CANrxData[3];
 
             /* Expedited transfer */
             if(SDO->ODF_arg.dataLength <= 4U){
                 for(i=0U; i<SDO->ODF_arg.dataLength; i++)
-                    SDO->CANtxBuff->data[4U+i] = SDO->ODF_arg.data[i];
+                    TXbuff.data[4U+i] = SDO->ODF_arg.data[i];
 
-                SDO->CANtxBuff->data[0] = 0x43U | ((4U-SDO->ODF_arg.dataLength) << 2U);
+                TXbuff.data[0] = 0x43U | ((4U-SDO->ODF_arg.dataLength) << 2U);
                 SDO->state = CO_SDO_ST_IDLE;
 
                 sendResponse = true;
@@ -944,11 +937,11 @@ int8_t CO_SDO_process(
                 /* indicate data size, if known */
                 if(SDO->ODF_arg.dataLengthTotal != 0U){
                     uint32_t len = SDO->ODF_arg.dataLengthTotal;
-                    CO_memcpySwap4(&SDO->CANtxBuff->data[4], &len);
-                    SDO->CANtxBuff->data[0] = 0x41U;
+                    CO_memcpySwap4(&TXbuff.data[4], &len);
+                    TXbuff.data[0] = 0x41U;
                 }
                 else{
-                    SDO->CANtxBuff->data[0] = 0x40U;
+                    TXbuff.data[0] = 0x40U;
                 }
 
                 /* send response */
@@ -1007,15 +1000,15 @@ int8_t CO_SDO_process(
 
             /* fill response data bytes */
             for(i=0U; i<len; i++)
-                SDO->CANtxBuff->data[i+1] = SDO->ODF_arg.data[SDO->bufferOffset++];
+                TXbuff.data[i+1] = SDO->ODF_arg.data[SDO->bufferOffset++];
 
             /* first response byte */
-            SDO->CANtxBuff->data[0] = 0x00 | (SDO->sequence ? 0x10 : 0x00) | ((7-len)<<1);
+            TXbuff.data[0] = 0x00 | (SDO->sequence ? 0x10 : 0x00) | ((7-len)<<1);
             SDO->sequence = (SDO->sequence) ? 0 : 1;
 
             /* verify end of transfer */
             if((SDO->bufferOffset == SDO->ODF_arg.dataLength) && (SDO->ODF_arg.lastSegment)){
-                SDO->CANtxBuff->data[0] |= 0x01;
+                TXbuff.data[0] |= 0x01;
                 SDO->state = CO_SDO_ST_IDLE;
             }
 
@@ -1026,9 +1019,9 @@ int8_t CO_SDO_process(
 
         case CO_SDO_ST_UPLOAD_BL_INITIATE:{
             /* default response */
-            SDO->CANtxBuff->data[1] = SDO->CANrxData[1];
-            SDO->CANtxBuff->data[2] = SDO->CANrxData[2];
-            SDO->CANtxBuff->data[3] = SDO->CANrxData[3];
+            TXbuff.data[1] = SDO->CANrxData[1];
+            TXbuff.data[2] = SDO->CANrxData[2];
+            TXbuff.data[3] = SDO->CANrxData[3];
 
             /* calculate CRC, if enabled */
             if((SDO->CANrxData[0] & 0x04U) != 0U){
@@ -1058,11 +1051,11 @@ int8_t CO_SDO_process(
             /* indicate data size, if known */
             if(SDO->ODF_arg.dataLengthTotal != 0U){
                 uint32_t len = SDO->ODF_arg.dataLengthTotal;
-                CO_memcpySwap4(&SDO->CANtxBuff->data[4], &len);
-                SDO->CANtxBuff->data[0] = 0xC6U;
+                CO_memcpySwap4(&TXbuff.data[4], &len);
+                TXbuff.data[0] = 0xC6U;
             }
             else{
-                SDO->CANtxBuff->data[0] = 0xC4U;
+                TXbuff.data[0] = 0xC4U;
             }
 
             /* send response */
@@ -1109,11 +1102,11 @@ int8_t CO_SDO_process(
                 /* end of transfer */
                 if((SDO->endOfTransfer) && (ackseq == SDO->blksize)){
                     /* first response byte */
-                    SDO->CANtxBuff->data[0] = 0xC1 | ((7 - SDO->lastLen) << 2);
+                    TXbuff.data[0] = 0xC1 | ((7 - SDO->lastLen) << 2);
 
                     /* CRC */
                     if(SDO->crcEnabled)
-                        CO_memcpySwap2(&SDO->CANtxBuff->data[1], &SDO->crc);
+                        CO_memcpySwap2(&TXbuff.data[1], &SDO->crc);
 
                     SDO->state = CO_SDO_ST_UPLOAD_BL_END;
 
@@ -1188,22 +1181,26 @@ int8_t CO_SDO_process(
 
             /* fill response data bytes */
             for(i=0U; i<len; i++){
-                SDO->CANtxBuff->data[i+1] = SDO->ODF_arg.data[SDO->bufferOffset++];
+                TXbuff.data[i+1] = SDO->ODF_arg.data[SDO->bufferOffset++];
             }
 
             /* first response byte */
-            SDO->CANtxBuff->data[0] = ++SDO->sequence;
+            TXbuff.data[0] = ++SDO->sequence;
 
             /* verify end of transfer */
             if((SDO->bufferOffset == SDO->ODF_arg.dataLength) && (SDO->ODF_arg.lastSegment)){
-                SDO->CANtxBuff->data[0] |= 0x80;
+                TXbuff.data[0] |= 0x80;
                 SDO->lastLen = len;
                 SDO->blksize = SDO->sequence;
                 SDO->endOfTransfer = true;
             }
 
             /* send response */
-            CO_CANsend(SDO->CANdevTx, SDO->CANtxBuff);
+            //CO_CANsend(SDO->CANdevTx, SDO->CANtxBuff);
+            TXbuff.ident = SDO->COB_IDServerToClient + SDO->nodeId;
+            TXbuff.DLC = 8;
+
+            co_driver_send(SDO->CANdev, &TXbuff);
 
             /* Set timerNext_ms to 0 to inform OS to call this function again without delay. */
             if(timerNext_ms != NULL){
@@ -1234,7 +1231,10 @@ int8_t CO_SDO_process(
     /* free buffer and send message */
     SDO->CANrxNew = false;
     if(sendResponse) {
-        CO_CANsend(SDO->CANdevTx, SDO->CANtxBuff);
+//        CO_CANsend(SDO->CANdevTx, SDO->CANtxBuff);
+            TXbuff.ident = SDO->COB_IDServerToClient + SDO->nodeId;
+            TXbuff.DLC = 8;
+            co_driver_send(SDO->CANdev, &TXbuff);
     }
 
     if(SDO->state != CO_SDO_ST_IDLE){
