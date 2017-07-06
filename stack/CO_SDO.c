@@ -502,7 +502,7 @@ uint32_t CO_SDO_writeOD(CO_SDO_t *SDO, uint16_t length){
 static void CO_SDO_abort(CO_SDO_t *SDO, uint32_t code){
         CO_CANtx_t TXbuff;      /**< CAN transmit buffer */
         TXbuff.ident = SDO->COB_IDServerToClient + SDO->nodeId;
-        TXbuff.DLC = 1;
+        TXbuff.DLC = 8;
 
         TXbuff.data[0] = 0x80;
         TXbuff.data[1] = SDO->ODF_arg.index & 0xFF;
