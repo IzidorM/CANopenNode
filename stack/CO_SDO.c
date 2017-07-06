@@ -358,7 +358,7 @@ uint32_t CO_SDO_initTransfer(CO_SDO_t *SDO, uint16_t index, uint8_t subIndex){
     
     /* fill ODF_arg */
     SDO->ODF_arg.object = NULL;
-    SDO->od_callback = CO_OD_getCallback(SDO->OD, SDO->object);
+    SDO->od_callback = CO_OD_getCallback(SDO->object);
   
     SDO->ODF_arg.data = SDO->databuffer;
 
