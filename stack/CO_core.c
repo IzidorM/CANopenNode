@@ -130,9 +130,6 @@ struct CO_core *CO_init(uint32_t node_id,
 {
         int32_t err;
 
-        // CAN interface
-//        void *CANdev = (void *) 0x1234;
-
         // init OD
         struct con_od_list_node_var *device_type;
         device_type = MALLOC(sizeof(struct con_od_list_node_var));
@@ -184,7 +181,7 @@ struct CO_core *CO_init(uint32_t node_id,
                 0x1200, //OD_H1200_SDO_SERVER_PARAM,
                 CO_core.OD,
                 node_id,
-                (void *) 0x1234);
+                can_driver);
         if (err)
         {
                 return NULL;
