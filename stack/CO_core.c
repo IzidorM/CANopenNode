@@ -235,7 +235,20 @@ int32_t CO_process(void)
 
         int32_t r;
         r = CO_NMT_process(&CO_core.NMT);
+        if (r)
+        {
+                return r;
+        }
+        r = CO_SDO_process(
+                &CO_core.SDO,
+                true,
+                100,
+                1000,
+                NULL);
+        if (r)
+        {
+                return r;
+        }
 //        CO_RPDO_process(&CO_core.RPDO, true);
-        
         return r;
 }
