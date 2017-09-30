@@ -172,7 +172,7 @@ static uint32_t CO_RPDOconfigMap(CO_RPDO_t* RPDO){
     for(i=1; noOfMappedObjects >= i; i++){
         int16_t j;
         uint8_t* pData;
-        uint8_t dummy = 0;
+//        uint8_t dummy = 0;
         uint8_t prevLength = length;
         uint8_t MBvar;
 
@@ -191,7 +191,7 @@ static uint32_t CO_RPDOconfigMap(CO_RPDO_t* RPDO){
                 0,
                 &pData,
                 &length,
-                &dummy,
+//                &dummy,
                 &MBvar,
                 &RPDO->map_callback[i-1]);
         if(ret){

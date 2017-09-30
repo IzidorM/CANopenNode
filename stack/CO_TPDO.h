@@ -84,13 +84,7 @@ extern "C" {
 /**
  * TPDO communication parameter. The same as record from Object dictionary (index 0x1800+).
  */
-typedef struct{
-    uint8_t             maxSubIndex;    /**< Equal to 6 */
-    /** Communication object identifier for transmitting message. Meaning of the specific bits:
-        - Bit  0-10: COB-ID for PDO, to change it bit 31 must be set.
-        - Bit 11-29: set to 0 for 11 bit COB-ID.
-        - Bit 30:    If true, rtr are NOT allowed for PDO.
-        - Bit 31:    If true, node does NOT use the PDO. */
+typedef struct {
     uint32_t            COB_IDUsedByTPDO;
     /** Transmission type. Values:
         - 0:       Transmiting is synchronous, specification in device profile.
@@ -99,15 +93,13 @@ typedef struct{
         - 252-253: Transmited only on reception of Remote Transmission Request.
         - 254:     Manufacturer specific.
         - 255:     Asinchronous, specification in device profile. */
-    uint8_t             transmissionType;
     /** Minimum time between transmissions of the PDO in 100micro seconds.
     Zero disables functionality. */
     uint16_t            inhibitTime;
-    /** Not used */
-    uint8_t             compatibilityEntry;
     /** Time between periodic transmissions of the PDO in milliseconds.
     Zero disables functionality. */
     uint16_t            eventTimer;
+    uint8_t             transmissionType;
     /** Used with numbered SYNC messages. Values:
         - 0:       Counter of the SYNC message shall not be processed.
         - 1-240:   The SYNC message with the counter value equal to this value
@@ -118,75 +110,70 @@ typedef struct{
 /**
  * Pointers to TPDO communication parameter entries in OD.
  */
-typedef struct{
-    uint8_t             *maxSubIndex;    /**< Equal to 6 */
-    /** Communication object identifier for transmitting message. Meaning of the specific bits:
-        - Bit  0-10: COB-ID for PDO, to change it bit 31 must be set.
-        - Bit 11-29: set to 0 for 11 bit COB-ID.
-        - Bit 30:    If true, rtr are NOT allowed for PDO.
-        - Bit 31:    If true, node does NOT use the PDO. */
-    uint32_t            *COB_IDUsedByTPDO;
-    /** Transmission type. Values:
-        - 0:       Transmiting is synchronous, specification in device profile.
-        - 1-240:   Transmiting is synchronous after every N-th SYNC object.
-        - 241-251: Not used.
-        - 252-253: Transmited only on reception of Remote Transmission Request.
-        - 254:     Manufacturer specific.
-        - 255:     Asinchronous, specification in device profile. */
-    uint8_t             *transmissionType;
-    /** Minimum time between transmissions of the PDO in 100micro seconds.
-    Zero disables functionality. */
-    uint16_t            *inhibitTime;
-    /** Time between periodic transmissions of the PDO in milliseconds.
-    Zero disables functionality. */
-    uint16_t            *eventTimer;
-    /** Used with numbered SYNC messages. Values:
-        - 0:       Counter of the SYNC message shall not be processed.
-        - 1-240:   The SYNC message with the counter value equal to this value
-                   shall be regarded as the first received SYNC message. */
-    uint8_t             *SYNCStartValue;
-}CO_TPDOCommPar_ptrs_t;
+//typedef struct{
+//    uint8_t             *maxSubIndex;    /**< Equal to 6 */
+//    /** Communication object identifier for transmitting message. Meaning of the specific bits:
+//        - Bit  0-10: COB-ID for PDO, to change it bit 31 must be set.
+//        - Bit 11-29: set to 0 for 11 bit COB-ID.
+//        - Bit 30:    If true, rtr are NOT allowed for PDO.
+//        - Bit 31:    If true, node does NOT use the PDO. */
+//    uint32_t            *COB_IDUsedByTPDO;
+//    /** Transmission type. Values:
+//        - 0:       Transmiting is synchronous, specification in device profile.
+//        - 1-240:   Transmiting is synchronous after every N-th SYNC object.
+//        - 241-251: Not used.
+//        - 252-253: Transmited only on reception of Remote Transmission Request.
+//        - 254:     Manufacturer specific.
+//        - 255:     Asinchronous, specification in device profile. */
+//    uint8_t             *transmissionType;
+//    /** Minimum time between transmissions of the PDO in 100micro seconds.
+//    Zero disables functionality. */
+//    uint16_t            *inhibitTime;
+//    /** Time between periodic transmissions of the PDO in milliseconds.
+//    Zero disables functionality. */
+//    uint16_t            *eventTimer;
+//    /** Used with numbered SYNC messages. Values:
+//        - 0:       Counter of the SYNC message shall not be processed.
+//        - 1-240:   The SYNC message with the counter value equal to this value
+//                   shall be regarded as the first received SYNC message. */
+//    uint8_t             *SYNCStartValue;
+//}CO_TPDOCommPar_ptrs_t;
 
         
-
 /**
  * TPDO mapping parameter. The same as record from Object dictionary (index 0x1A00+).
  */
 typedef struct{
     /** Actual number of mapped objects from 0 to 8. To change mapped object,
     this value must be 0. */
-    uint8_t             numberOfMappedObjects;
+        uint8_t numberOfMappedObjects;
     /** Location and size of the mapped object. Bit meanings `0xIIIISSLL`:
         - Bit  0-7:  Data Length in bits.
         - Bit 8-15:  Subindex from object distionary.
         - Bit 16-31: Index from object distionary. */
-    uint32_t            mappedObject1;
-    uint32_t            mappedObject2;  /**< Same */
-    uint32_t            mappedObject3;  /**< Same */
-    uint32_t            mappedObject4;  /**< Same */
-    uint32_t            mappedObject5;  /**< Same */
-    uint32_t            mappedObject6;  /**< Same */
-    uint32_t            mappedObject7;  /**< Same */
-    uint32_t            mappedObject8;  /**< Same */
-}CO_TPDOMapPar_t;
+        uint32_t mapped_object_param[8];
+        uint8_t *mapPointer[8];
+        uint8_t last_sent_data[8];
 
-typedef struct{
-    /** Actual number of mapped objects from 0 to 8. To change mapped object,
-    this value must be 0. */
-    uint8_t             *numberOfMappedObjects;
-    /** Location and size of the mapped object. Bit meanings `0xIIIISSLL`:
-        - Bit  0-7:  Data Length in bits.
-        - Bit 8-15:  Subindex from object distionary.
-        - Bit 16-31: Index from object distionary. */
-    uint32_t            *mappedObjects[8];
-//    uint32_t            *mappedObject2;  /**< Same */
-//    uint32_t            *mappedObject3;  /**< Same */
-//    uint32_t            *mappedObject4;  /**< Same */
-//    uint32_t            *mappedObject5;  /**< Same */
-//    uint32_t            *mappedObject6;  /**< Same */
-//    uint32_t            *mappedObject7;  /**< Same */
-//    uint32_t            *mappedObject8;  /**< Same */
-}CO_TPDOMapPar_ptrs_t;
+} CO_TPDOMapPar_t;
+
+//typedef struct{
+//    /** Actual number of mapped objects from 0 to 8. To change mapped object,
+//    this value must be 0. */
+//    uint8_t             *numberOfMappedObjects;
+//    /** Location and size of the mapped object. Bit meanings `0xIIIISSLL`:
+//        - Bit  0-7:  Data Length in bits.
+//        - Bit 8-15:  Subindex from object distionary.
+//        - Bit 16-31: Index from object distionary. */
+//    uint32_t            *mappedObjects[8];
+////    uint32_t            *mappedObject2;  /**< Same */
+////    uint32_t            *mappedObject3;  /**< Same */
+////    uint32_t            *mappedObject4;  /**< Same */
+////    uint32_t            *mappedObject5;  /**< Same */
+////    uint32_t            *mappedObject6;  /**< Same */
+////    uint32_t            *mappedObject7;  /**< Same */
+////    uint32_t            *mappedObject8;  /**< Same */
+//}CO_TPDOMapPar_ptrs_t;
         
 /**
  * TPDO object.
@@ -195,36 +182,36 @@ typedef struct{
 //    CO_EM_t            *em;             /**< From CO_TPDO_init() */
 //    CO_SDO_t           *SDO;            /**< From CO_TPDO_init() */
         void *OD;    
-//    const CO_TPDOCommPar_t *TPDOCommPar;/**< From CO_TPDO_init() */
-        CO_TPDOCommPar_ptrs_t TPDOCommPar_ptrs;
-//    const CO_TPDOMapPar_t  *TPDOMapPar; /**< From CO_TPDO_init() */
-        CO_TPDOMapPar_ptrs_t TPDOMapPar_ptrs; /**< From CO_TPDO_init() */
-    uint8_t            *operatingState; /**< From CO_TPDO_init() */
+    CO_TPDOCommPar_t TPDOCommPar;/**< From CO_TPDO_init() */
+//        CO_TPDOCommPar_ptrs_t TPDOCommPar_ptrs;
+    CO_TPDOMapPar_t  TPDOMapPar; /**< From CO_TPDO_init() */
+//        CO_TPDOMapPar_ptrs_t TPDOMapPar_ptrs; /**< From CO_TPDO_init() */
+//    uint8_t            *operatingState; /**< From CO_TPDO_init() */
     uint8_t             nodeId;         /**< From CO_TPDO_init() */
-    uint16_t            defaultCOB_ID;  /**< From CO_TPDO_init() */
-    uint8_t             restrictionFlags;/**< From CO_TPDO_init() */
-    bool_t              valid;          /**< True, if PDO is enabled and valid */
+//    uint16_t            defaultCOB_ID;  /**< From CO_TPDO_init() */
+//    uint8_t             restrictionFlags;/**< From CO_TPDO_init() */
+//    bool              valid;          /**< True, if PDO is enabled and valid */
     /** Data length of the transmitting PDO message. Calculated from mapping */
     uint8_t             dataLength;
     /** If application set this flag, PDO will be later sent by
     function CO_TPDO_process(). Depends on transmission type. */
-    uint8_t             sendRequest;
+//    uint8_t             sendRequest;
     /** Pointers to 8 data objects, where PDO will be copied */
-    uint8_t            *mapPointer[8];
+//    uint8_t            *mapPointer[8];
     /** Each flag bit is connected with one mapPointer. If flag bit
     is true, CO_TPDO_process() functiuon will send PDO if
     Change of State is detected on value pointed by that mapPointer */
-    uint8_t             sendIfCOSFlags;
+//    uint8_t             sendIfCOSFlags;
     /** SYNC counter used for PDO sending */
-    uint8_t             syncCounter;
+//    uint8_t             syncCounter;
     /** Inhibit timer used for inhibit PDO sending translated to microseconds */
-    uint32_t            inhibitTimer;
+//    uint32_t            inhibitTimer;
     /** Event timer used for PDO sending translated to microseconds */
-    uint32_t            eventTimer;
+//    uint32_t            eventTimer;
     void  *CANdev;       /**< From CO_TPDO_init() */
 //    CO_CANtx_t         *CANtxBuff;      /**< CAN transmit buffer inside CANdev */
 //    uint16_t            CANdevTxIdx;    /**< From CO_TPDO_init() */
-    CO_CANtx_t TXbuff;      /**< CAN transmit buffer */
+//    CO_CANtx_t TXbuff;      /**< CAN transmit buffer */
 }CO_TPDO_t;
 
 /**
@@ -261,14 +248,15 @@ CO_ReturnError_t CO_TPDO_init(
 //        CO_EM_t                *em,
 //        CO_SDO_t               *SDO,
         void               *OD,
+        uint32_t            COB_IDUsedByTPDO,
 //        uint8_t                *operatingState,
         uint8_t                 nodeId,
 //        uint16_t                defaultCOB_ID,
-        uint8_t                 restrictionFlags,
+//        uint8_t                 restrictionFlags,
 //        const CO_TPDOCommPar_t *TPDOCommPar,
 //        const CO_TPDOMapPar_t  *TPDOMapPar,
-        uint16_t                idx_TPDOCommPar,
-        uint16_t                idx_TPDOMapPar,
+//        uint16_t                idx_TPDOCommPar,
+//        uint16_t                idx_TPDOMapPar,
         void *CANdev);
 //        CO_CANmodule_t         *CANdevTx,
 //        uint16_t                CANdevTxIdx);
@@ -288,7 +276,7 @@ CO_ReturnError_t CO_TPDO_init(
  *
  * @return True if COS was detected.
  */
-uint8_t CO_TPDOisCOS(CO_TPDO_t *TPDO);
+bool CO_TPDOisCOS(CO_TPDO_t *TPDO);
 
 
 /**
@@ -320,9 +308,18 @@ int16_t CO_TPDOsend(CO_TPDO_t *TPDO);
 void CO_TPDO_process(
         CO_TPDO_t              *TPDO,
 //        CO_SYNC_t              *SYNC,
-        bool_t                  syncWas,
+        bool                  syncWas,
         uint32_t                timeDifference_us);
 
+bool CO_TPDO_is_enabled(CO_TPDO_t *TPDO);
+void CO_TPDO_enable(CO_TPDO_t *TPDO);
+void CO_TPDO_disable(CO_TPDO_t *TPDO);
+CO_ReturnError_t CO_TPDO_add_mapping(
+                CO_TPDO_t *TPDO,
+                uint16_t index,
+                uint8_t subindex, 
+                uint8_t data_size);
+        
 #ifdef __cplusplus
 }
 #endif /*__cplusplus*/
