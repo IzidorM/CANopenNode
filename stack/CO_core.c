@@ -6,10 +6,10 @@
 #include "CO_OD_interface.h"
 #include "CO_driver.h"
 #include "CO_core.h"
-//#include "mem.h"
-//
-//#define MALLOC mem_maloc_static
-#define MALLOC malloc
+#include "mem.h"
+
+#define MALLOC mem_maloc_static
+//#define MALLOC malloc
 
 uint32_t COB_IDClientToServer = 0x600;
 uint32_t COB_IDServerToClient = 0x580;
