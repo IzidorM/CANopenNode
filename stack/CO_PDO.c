@@ -212,7 +212,7 @@ uint32_t CO_PDOfindMap(
         uint8_t                 R_T,
         uint8_t               **ppData,
         uint8_t                *pLength,
-        uint8_t                *pSendIfCOSFlags,
+//        uint8_t                *pSendIfCOSFlags,
         uint8_t                *pIsMultibyteVar,
         uint32_t (**map_callback)(void*))
 {
@@ -315,12 +315,12 @@ uint32_t CO_PDOfindMap(
 #endif
 
     /* setup change of state flags */
-    if(attr&CO_ODA_TPDO_DETECT_COS){
-        int16_t i;
-        for(i=*pLength-dataLen; i<*pLength; i++){
-            *pSendIfCOSFlags |= 1<<i;
-        }
-    }
+//    if(attr&CO_ODA_TPDO_DETECT_COS){
+//        int16_t i;
+//        for(i=*pLength-dataLen; i<*pLength; i++){
+//            *pSendIfCOSFlags |= 1<<i;
+//        }
+//    }
 
     *map_callback = CO_OD_getCallback(object);
     

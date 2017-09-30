@@ -470,7 +470,7 @@ uint32_t CO_PDOfindMap(
         uint8_t                 R_T,
         uint8_t               **ppData,
         uint8_t                *pLength,
-        uint8_t                *pSendIfCOSFlags,
+//        uint8_t                *pSendIfCOSFlags,
         uint8_t                *pIsMultibyteVar,
         uint32_t (**map_callback)(void*));
 

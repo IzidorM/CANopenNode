@@ -14,7 +14,8 @@
 uint32_t COB_IDClientToServer = 0x600;
 uint32_t COB_IDServerToClient = 0x580;
 
-uint32_t     COB_IDUsedByRPDO = CO_CAN_ID_TPDO_1;
+uint32_t     COB_IDUsedByTPDO = CO_CAN_ID_TPDO_1;
+uint32_t     COB_IDUsedByRPDO = CO_CAN_ID_RPDO_1;
 uint8_t      transmissionType = 0x1;
 uint16_t     inhibitTime = 0x0102;
 uint8_t      compatibilityEntry = 0x3;
@@ -45,7 +46,7 @@ int32_t make_rpdo_od_entries(void *OD)
         struct con_od_list_node_record *OD_1400;
         OD_1400 = MALLOC(sizeof(struct con_od_list_node_record));
         
-        INIT_OD_ENTRY_RECORD(OD_1400, 0x1400, &OD_1400_subelements[0], 2, "", "");
+        INIT_OD_ENTRY_RECORDp(OD_1400, 0x1400, &OD_1400_subelements[0], 2, "", "");
         err = con_od_add_element_to_od(&OD, OD_1400);
         if (err)
         {
@@ -65,10 +66,81 @@ int32_t make_rpdo_od_entries(void *OD)
 
         struct con_od_list_node_record *OD_1600;
         OD_1600 = MALLOC(sizeof(struct con_od_list_node_record));
-        INIT_OD_ENTRY_RECORD(OD_1600, 0x1600, &OD_1600_subelements[0],
+        INIT_OD_ENTRY_RECORDp(OD_1600, 0x1600, &OD_1600_subelements[0],
                              0, "", "");
 
         err = con_od_add_element_to_od(&OD, OD_1600);
+        if (err)
+        {
+                return err;
+        }
+
+        return err;
+}
+
+int32_t make_tpdo_od_entries(void *OD)
+{
+        int32_t err;
+
+        // Make a OD record
+//        struct con_od_record_entry OD_1800_subelements[7];
+        struct con_od_record_entry *OD_1800_subelements = MALLOC(sizeof(struct con_od_record_entry) * 7);
+        INIT_RECORD_SUBENTRY(&OD_1800_subelements[0],
+                             OD_TYPE_UINT32,
+                             0x8D, //CO_ODA_WRITEABLE | CO_ODA_READABLE,
+                             &COB_IDUsedByTPDO, "", "");
+
+        INIT_RECORD_SUBENTRY(&OD_1800_subelements[1],
+                             OD_TYPE_UINT8,
+                             0x0D, //CO_ODA_WRITEABLE | CO_ODA_READABLE,
+                             &transmissionType, "", "");
+
+        INIT_RECORD_SUBENTRY(&OD_1800_subelements[2],
+                             OD_TYPE_UINT16,
+                             0x8D, //CO_ODA_WRITEABLE | CO_ODA_READABLE,
+                             &inhibitTime, "", "");
+
+        INIT_RECORD_SUBENTRY(&OD_1800_subelements[3],
+                             OD_TYPE_UINT32,
+                             0x0D, //CO_ODA_WRITEABLE | CO_ODA_READABLE,
+                             &compatibilityEntry, "", "");
+
+        INIT_RECORD_SUBENTRY(&OD_1800_subelements[4],
+                             OD_TYPE_UINT16,
+                             0x8D, //CO_ODA_WRITEABLE | CO_ODA_READABLE,
+                             &eventTimer, "", "");
+
+        INIT_RECORD_SUBENTRY(&OD_1800_subelements[5],
+                             OD_TYPE_UINT8,
+                             0x0D,
+                             &SYNCStartValue, "", "");
+        
+//        struct con_od_list_node_record OD_1800;
+        struct con_od_list_node_record *OD_1800 = MALLOC(sizeof(struct con_od_list_node_record));
+        INIT_OD_ENTRY_RECORDp(OD_1800, 0x1800, &OD_1800_subelements[0], 6, "", "");
+        err = con_od_add_element_to_od(&OD, OD_1800);
+        if (err)
+        {
+                return err;
+        }
+
+//        struct con_od_record_entry OD_1A00_subelements[8];
+        struct con_od_record_entry *OD_1A00_subelements = MALLOC(sizeof(struct con_od_record_entry) * 8);
+
+        uint32_t i;
+        for (i = 0; 8 > i; i++)
+        {
+                INIT_RECORD_SUBENTRY(&OD_1A00_subelements[i],
+                                     OD_TYPE_UINT32,
+                                     0x8D, //CO_ODA_WRITEABLE | CO_ODA_READABLE,
+                                     &mappedObjects[i], "", "");
+        }
+
+//        struct con_od_list_node_record OD_1A00;
+        struct con_od_list_node_record *OD_1A00 = malloc(sizeof(struct con_od_list_node_record));
+        INIT_OD_ENTRY_RECORDp(OD_1A00, 0x1A00, &OD_1A00_subelements[0], 1, "", "");
+        // Add OD elements together in a OD linked list
+        err = con_od_add_element_to_od(&OD, OD_1A00);
         if (err)
         {
                 return err;
@@ -94,7 +166,7 @@ int32_t make_sdo_od_entries(void *OD)
 
         struct con_od_list_node_record *OD_1200;
         OD_1200 = MALLOC(sizeof(struct con_od_list_node_record));
-        INIT_OD_ENTRY_RECORD(OD_1200, 0x1200, &OD_1200_subelements[0], 2, "", "");
+        INIT_OD_ENTRY_RECORDp(OD_1200, 0x1200, &OD_1200_subelements[0], 2, "", "");
 
         int32_t err = con_od_add_element_to_od(&OD, OD_1200);
         if (err)
@@ -195,7 +267,19 @@ struct CO_core *CO_init(uint32_t node_id,
                 return NULL;
         }
 
+        err = CO_TPDO_init(
+                &CO_core.TPDO,
+                CO_core.OD,
+                CO_CAN_ID_TPDO_1,
+                node_id,
+                can_driver);
+        if (err)
+        {
+                return NULL;
+        }
+
         
+
         // init RPDO
 //        CO_core.OD = make_rpdo_od_entries(OD);
 //        if (NULL == CO_core.OD)
@@ -224,6 +308,8 @@ struct CO_core *CO_init(uint32_t node_id,
 //                return NULL;
 //        }
 
+        
+        
         return &CO_core;
 }
 
@@ -247,5 +333,7 @@ int32_t CO_process(void)
                 return r;
         }
 //        CO_RPDO_process(&CO_core.RPDO, true);
+
+        CO_TPDO_process(&CO_core.TPDO, false, 10);
         return r;
 }

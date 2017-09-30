@@ -1200,6 +1200,7 @@ int8_t CO_SDO_process(
             TXbuff.ident = SDO->COB_IDServerToClient + SDO->nodeId;
             TXbuff.DLC = 8;
 
+            // TODO: Check return value
             co_driver_send(SDO->CANdev, &TXbuff);
 
             /* Set timerNext_ms to 0 to inform OS to call this function again without delay. */

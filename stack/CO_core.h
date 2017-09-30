@@ -3,14 +3,15 @@
 
 #include "CO_NMT.h"
 #include "CO_SDO.h"
+#include "CO_TPDO.h"
 #include "CO_RPDO.h"
-
 
 struct CO_core {
         void *CAN_DRIVER;
         void *OD;
         CO_NMT_t NMT;
         CO_SDO_t SDO;
+        CO_TPDO_t TPDO;
         CO_RPDO_t RPDO;
 };
 
