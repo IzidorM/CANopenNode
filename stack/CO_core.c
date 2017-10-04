@@ -78,80 +78,79 @@ int32_t make_rpdo_od_entries(void *OD)
         return err;
 }
 
-int32_t make_tpdo_od_entries(void *OD)
-{
-        int32_t err;
-
-        // Make a OD record
+//int32_t make_tpdo_od_entries(void *OD)
+//{
+//        int32_t err;
+//
+//        // Make a OD record
 //        struct con_od_record_entry OD_1800_subelements[7];
-        struct con_od_record_entry *OD_1800_subelements = MALLOC(sizeof(struct con_od_record_entry) * 7);
-        INIT_RECORD_SUBENTRY(&OD_1800_subelements[0],
-                             OD_TYPE_UINT32,
-                             0x8D, //CO_ODA_WRITEABLE | CO_ODA_READABLE,
-                             &COB_IDUsedByTPDO, "", "");
-
-        INIT_RECORD_SUBENTRY(&OD_1800_subelements[1],
-                             OD_TYPE_UINT8,
-                             0x0D, //CO_ODA_WRITEABLE | CO_ODA_READABLE,
-                             &transmissionType, "", "");
-
-        INIT_RECORD_SUBENTRY(&OD_1800_subelements[2],
-                             OD_TYPE_UINT16,
-                             0x8D, //CO_ODA_WRITEABLE | CO_ODA_READABLE,
-                             &inhibitTime, "", "");
-
-        INIT_RECORD_SUBENTRY(&OD_1800_subelements[3],
-                             OD_TYPE_UINT32,
-                             0x0D, //CO_ODA_WRITEABLE | CO_ODA_READABLE,
-                             &compatibilityEntry, "", "");
-
-        INIT_RECORD_SUBENTRY(&OD_1800_subelements[4],
-                             OD_TYPE_UINT16,
-                             0x8D, //CO_ODA_WRITEABLE | CO_ODA_READABLE,
-                             &eventTimer, "", "");
-
-        INIT_RECORD_SUBENTRY(&OD_1800_subelements[5],
-                             OD_TYPE_UINT8,
-                             0x0D,
-                             &SYNCStartValue, "", "");
-        
-//        struct con_od_list_node_record OD_1800;
-        struct con_od_list_node_record *OD_1800 = MALLOC(sizeof(struct con_od_list_node_record));
-        INIT_OD_ENTRY_RECORDp(OD_1800, 0x1800, &OD_1800_subelements[0], 6, "", "");
-        err = con_od_add_element_to_od(&OD, OD_1800);
-        if (err)
-        {
-                return err;
-        }
-
-//        struct con_od_record_entry OD_1A00_subelements[8];
-        struct con_od_record_entry *OD_1A00_subelements = MALLOC(sizeof(struct con_od_record_entry) * 8);
-
-        uint32_t i;
-        for (i = 0; 8 > i; i++)
-        {
-                INIT_RECORD_SUBENTRY(&OD_1A00_subelements[i],
-                                     OD_TYPE_UINT32,
-                                     0x8D, //CO_ODA_WRITEABLE | CO_ODA_READABLE,
-                                     &mappedObjects[i], "", "");
-        }
-
-//        struct con_od_list_node_record OD_1A00;
-        struct con_od_list_node_record *OD_1A00 = malloc(sizeof(struct con_od_list_node_record));
-        INIT_OD_ENTRY_RECORDp(OD_1A00, 0x1A00, &OD_1A00_subelements[0], 1, "", "");
-        // Add OD elements together in a OD linked list
-        err = con_od_add_element_to_od(&OD, OD_1A00);
-        if (err)
-        {
-                return err;
-        }
-
-        return err;
-}
+//        struct con_od_record_entry *OD_1800_subelements = MALLOC(sizeof(struct con_od_record_entry) * 7);
+//        INIT_RECORD_SUBENTRY(&OD_1800_subelements[0],
+//                             OD_TYPE_UINT32,
+//                             0x8D, //CO_ODA_WRITEABLE | CO_ODA_READABLE,
+//                             &COB_IDUsedByTPDO, "", "");
+//
+//        INIT_RECORD_SUBENTRY(&OD_1800_subelements[1],
+//                             OD_TYPE_UINT8,
+//                             0x0D, //CO_ODA_WRITEABLE | CO_ODA_READABLE,
+//                             &transmissionType, "", "");
+//
+//        INIT_RECORD_SUBENTRY(&OD_1800_subelements[2],
+//                             OD_TYPE_UINT16,
+//                             0x8D, //CO_ODA_WRITEABLE | CO_ODA_READABLE,
+//                             &inhibitTime, "", "");
+//
+//        INIT_RECORD_SUBENTRY(&OD_1800_subelements[3],
+//                             OD_TYPE_UINT32,
+//                             0x0D, //CO_ODA_WRITEABLE | CO_ODA_READABLE,
+//                             &compatibilityEntry, "", "");
+//
+//        INIT_RECORD_SUBENTRY(&OD_1800_subelements[4],
+//                             OD_TYPE_UINT16,
+//                             0x8D, //CO_ODA_WRITEABLE | CO_ODA_READABLE,
+//                             &eventTimer, "", "");
+//
+//        INIT_RECORD_SUBENTRY(&OD_1800_subelements[5],
+//                             OD_TYPE_UINT8,
+//                             0x0D,
+//                             &SYNCStartValue, "", "");
+//        
+////        struct con_od_list_node_record OD_1800;
+//        struct con_od_list_node_record *OD_1800 = MALLOC(sizeof(struct con_od_list_node_record));
+//        INIT_OD_ENTRY_RECORDp(OD_1800, 0x1800, &OD_1800_subelements[0], 6, "", "");
+//        err = con_od_add_element_to_od(&OD, OD_1800);
+//        if (err)
+//        {
+//                return err;
+//        }
+//
+////        struct con_od_record_entry OD_1A00_subelements[8];
+//        struct con_od_record_entry *OD_1A00_subelements = MALLOC(sizeof(struct con_od_record_entry) * 8);
+//
+//        uint32_t i;
+//        for (i = 0; 8 > i; i++)
+//        {
+//                INIT_RECORD_SUBENTRY(&OD_1A00_subelements[i],
+//                                     OD_TYPE_UINT32,
+//                                     0x8D, //CO_ODA_WRITEABLE | CO_ODA_READABLE,
+//                                     &mappedObjects[i], "", "");
+//        }
+//
+////        struct con_od_list_node_record OD_1A00;
+//        struct con_od_list_node_record *OD_1A00 = malloc(sizeof(struct con_od_list_node_record));
+//        INIT_OD_ENTRY_RECORDp(OD_1A00, 0x1A00, &OD_1A00_subelements[0], 1, "", "");
+//        // Add OD elements together in a OD linked list
+//        err = con_od_add_element_to_od(&OD, OD_1A00);
+//        if (err)
+//        {
+//                return err;
+//        }
+//
+//        return err;
+//}
 
 int32_t make_sdo_od_entries(void *OD)
 {
-
         struct con_od_record_entry *OD_1200_subelements;
         OD_1200_subelements = MALLOC(sizeof(struct con_od_record_entry)*2);
         INIT_RECORD_SUBENTRY(&OD_1200_subelements[0],
@@ -267,6 +266,19 @@ struct CO_core *CO_init(uint32_t node_id,
                 return NULL;
         }
 
+        // init SYNC
+        err = CO_SYNC_init(
+                &CO_core.SYNC,
+                CO_CAN_ID_SYNC,
+                node_id,
+                can_driver);
+        if (err)
+        {
+                return NULL;
+        }
+
+
+        // init TPDO
         err = CO_TPDO_init(
                 &CO_core.TPDO,
                 CO_core.OD,
@@ -279,7 +291,6 @@ struct CO_core *CO_init(uint32_t node_id,
         }
 
         
-
         // init RPDO
 //        CO_core.OD = make_rpdo_od_entries(OD);
 //        if (NULL == CO_core.OD)
@@ -332,8 +343,41 @@ int32_t CO_process(void)
         {
                 return r;
         }
-//        CO_RPDO_process(&CO_core.RPDO, true);
 
-        CO_TPDO_process(&CO_core.TPDO, false, 10);
+        // handle SYNC
+        enum co_sync_types sync_received = CO_NO_SYNC;
+        uint8_t sync_counter = 0x0;
+        r = CO_SYNC_process(&CO_core.SYNC, &sync_received,
+                            &sync_counter, 0);
+
+        if (r)
+        {
+                return r;
+        }
+
+        // handle TPDOs
+        if (CO_NMT_OPERATIONAL == CO_NMT_getInternalState(&CO_core.NMT))
+        {
+                if (CO_NO_SYNC == sync_received)
+                {
+                        CO_TPDO_process(&CO_core.TPDO, CO_TPDO_NO_SYNC, 0, 10);
+                }
+                else if (CO_SYNC_WITHOUT_COUNTER == sync_received)
+                {
+                        CO_TPDO_process(&CO_core.TPDO, CO_TPDO_SYNC_WITHOUT_COUNTER,
+                                        0, 10);
+                }
+                else if (CO_SYNC_WITH_COUNTER == sync_received)
+                {
+                        CO_TPDO_process(&CO_core.TPDO, CO_TPDO_SYNC_WITH_COUNTER,
+                                        sync_counter, 10);
+                }
+                else
+                {
+                        //TODO: Return error
+                }
+        }
+
+        
         return r;
 }
