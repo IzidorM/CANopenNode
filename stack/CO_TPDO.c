@@ -45,10 +45,6 @@
 
 #include "CO_driver.h"
 #include "CO_OD_interface.h"
-//#include "CO_SDO.h"
-//#include "CO_Emergency.h"
-//#include "CO_NMT_Heartbeat.h"
-//#include "CO_SYNC.h"
 #include "CO_PDO.h"
 #include "CO_TPDO.h"
 #include <string.h>
@@ -114,10 +110,6 @@ static uint32_t CO_TPDOconfigMap(CO_TPDO_t* TPDO, uint8_t noOfMappedObjects){
     int16_t i;
     uint8_t length = 0;
     uint32_t ret = 0;
-//    uint32_t** pMap = &TPDO->TPDOMapPar_ptrs.mappedObjects[0];
-
-    
-//    TPDO->sendIfCOSFlags = 0;
 
     for(i=0;noOfMappedObjects>i; i++){
         int16_t j;
@@ -324,6 +316,45 @@ static uint32_t CO_TPDOconfigMap(CO_TPDO_t* TPDO, uint8_t noOfMappedObjects){
 //}
 //
 
+CO_ReturnError_t CO_TPDO_set_transmission_type(
+                CO_TPDO_t *TPDO,
+                uint8_t transmission_type)
+{
+        if ((CO_TT_SYNCHRONOUS_EVERY_240_CYCLE >= transmission_type) ||
+            (CO_TT_EVENT_DRIVEN_MANUFACTURER_SPECIFIC <= transmission_type))
+        {
+                TPDO->TPDOCommPar.transmissionType = transmission_type;
+                return CO_ERROR_NO;
+        }
+        return CO_ERROR_ILLEGAL_ARGUMENT;
+}
+
+
+CO_ReturnError_t CO_TPDO_set_inhibit_time(
+                CO_TPDO_t *TPDO,
+                uint16_t inhibit_time)
+{
+        TPDO->TPDOCommPar.inhibitTime = inhibit_time;
+        return CO_ERROR_NO;
+}
+
+CO_ReturnError_t CO_TPDO_set_event_time(
+                CO_TPDO_t *TPDO,
+                uint16_t event_time)
+{
+        TPDO->TPDOCommPar.eventTimer = event_time;
+        return CO_ERROR_NO;
+}
+
+CO_ReturnError_t CO_TPDO_set_sync_start_value(
+                CO_TPDO_t *TPDO,
+                uint16_t sync_start_value)
+{
+        TPDO->TPDOCommPar.SYNCStartValue = sync_start_value;
+        return CO_ERROR_NO;
+}
+
+
 CO_ReturnError_t CO_TPDO_add_mapping(
                 CO_TPDO_t *TPDO,
                 uint16_t index,
@@ -338,21 +369,21 @@ CO_ReturnError_t CO_TPDO_add_mapping(
                 return CO_ERROR_TPDO_MAPPING_FAILED;
         }
         
-        uint8_t *m = &TPDO->TPDOMapPar.numberOfMappedObjects;
-        if (*m < 8)
+        uint8_t tmp = TPDO->TPDOMapPar.numberOfMappedObjects;
+        if (tmp < 8)
         {
-                TPDO->TPDOMapPar.mapped_object_param[*m] = 
+                TPDO->TPDOMapPar.mapped_object_param[tmp] = 
                         ((index & 0xffff) << 16) |
                         ((subindex & 0xff) << 8) |
                         (data_size & 0xff);
-                TPDO->TPDOMapPar.numberOfMappedObjects += 1;
-                r = CO_TPDOconfigMap(TPDO, *m);
+                r = CO_TPDOconfigMap(TPDO, tmp + 1);
                 if (r)
                 {
-                        *m -= 1;
-                        TPDO->TPDOMapPar.mapped_object_param[*m] = 0;
+                        TPDO->TPDOMapPar.mapped_object_param[tmp] = 0;
                         return CO_ERROR_TPDO_MAPPING_FAILED;
                 }
+                TPDO->TPDOMapPar.last_sent_data[tmp] = *TPDO->TPDOMapPar.mapPointer[tmp];
+                TPDO->TPDOMapPar.numberOfMappedObjects += 1;
         }
         return CO_ERROR_NO;
 }
@@ -385,8 +416,6 @@ CO_ReturnError_t CO_TPDO_init(
         void *OD,
         uint32_t COB_IDUsedByTPDO,
         uint8_t nodeId,
-//        uint16_t                idx_TPDOCommPar,
-//        uint16_t                idx_TPDOMapPar,
         void         *CANdev)
 {
     /* verify arguments */
@@ -406,94 +435,13 @@ CO_ReturnError_t CO_TPDO_init(
 
         TPDO->TPDOCommPar.COB_IDUsedByTPDO = COB_IDUsedByTPDO;
 
+        // used only when transmission type synchronous (cycle every Nth sync)
+        // and sync packets have support for the overflow counter
+        TPDO->waiting_for_right_sync_cnt_value = true;
 
         TPDO->CANdev = CANdev;
 
-//    void *object = CO_OD_find(OD, idx_TPDOCommPar);
-//    if (NULL == object)
-//    {
-//            return CO_ERROR_ILLEGAL_ARGUMENT;
-//    }
-//
-//    if (6 == CO_OD_getMaxSubindex(object))
-//    {
-//            TPDO->TPDOCommPar_ptrs.maxSubIndex = CO_OD_getDataPointer(object, 0);
-//            TPDO->TPDOCommPar_ptrs.COB_IDUsedByTPDO = CO_OD_getDataPointer(object, 1);
-//            TPDO->TPDOCommPar_ptrs.transmissionType = CO_OD_getDataPointer(object, 2);
-//            TPDO->TPDOCommPar_ptrs.inhibitTime = CO_OD_getDataPointer(object, 3);
-//            TPDO->TPDOCommPar_ptrs.eventTimer = CO_OD_getDataPointer(object, 5);
-//            TPDO->TPDOCommPar_ptrs.SYNCStartValue = CO_OD_getDataPointer(object, 6);
-//    }
-//    else
-//    {
-//            return CO_ERROR_ILLEGAL_ARGUMENT;
-//    }
-
-//    object = CO_OD_find(OD, idx_TPDOMapPar);
-//    if (NULL == object)
-//    {
-//            return CO_ERROR_ILLEGAL_ARGUMENT;
-//    }
-
-//    TPDO->TPDOMapPar_ptrs.numberOfMappedObjects = CO_OD_getDataPointer(object, 0);
-//    for (i = 0; 8 > i; i++)
-//    {
-//            void *tmp = CO_OD_getDataPointer(object, i+1);
-//            if (tmp)
-//            {
-//                    TPDO->TPDOMapPar_ptrs.mappedObjects[i] = CO_OD_getDataPointer(object, i+1);
-//            }
-//            else
-//            {
-//                    return CO_ERROR_DATA_CORRUPT;
-//            }
-//    }
-
-//    TPDO->TPDOCommPar = TPDOCommPar;
-
-//    TPDO->TPDOMapPar = TPDOMapPar;
-
-//    TPDO->operatingState = operatingState;
-//    TPDO->defaultCOB_ID = defaultCOB_ID;
-
-
-    /* Configure Object dictionary entry at index 0x1800+ and 0x1A00+ */
-//    CO_OD_configure(&SDO->OD, idx_TPDOCommPar, CO_ODF_TPDOcom, (void*)TPDO, 0, 0);
-//    CO_OD_configure(&SDO->OD, idx_TPDOMapPar, CO_ODF_TPDOmap, (void*)TPDO, 0, 0);
-
-    /* configure communication and mapping */
-//    TPDO->CANdevTx = CANdevTx;
-//    TPDO->CANdevTxIdx = CANdevTxIdx;
-//    TPDO->syncCounter = 255;
-//    TPDO->inhibitTimer = 0;
-//    TPDO->eventTimer = ((uint32_t) *TPDO->TPDOCommPar_ptrs.eventTimer) * 1000;
-//
-//    if(*TPDO->TPDOCommPar_ptrs.transmissionType >= 254)
-//    {
-//            TPDO->sendRequest = 1;
-//    }
-
-    // TODO: Error checking?
-//    CO_TPDOconfigMap(TPDO, TPDOMapPar->numberOfMappedObjects);
-
-//    // TODO: Implement it as ptrs to OD
-//    err = CO_TPDOconfigMap(TPDO, *TPDO->TPDOMapPar_ptrs.numberOfMappedObjects);
-//    if (err)
-//    {
-//            return CO_ERROR_ILLEGAL_ARGUMENT;            
-//    }
-//    CO_TPDOconfigCom(TPDO,
-//                     *TPDO->TPDOCommPar_ptrs.COB_IDUsedByTPDO,
-//                     ((*TPDO->TPDOCommPar_ptrs.transmissionType <= 240) ? 1 : 0));
-//    TPDO->valid = true;
-    
-//    if((*TPDO->TPDOCommPar_ptrs.transmissionType > 240 &&
-//         *TPDO->TPDOCommPar_ptrs.transmissionType < 254) ||
-//         *TPDO->TPDOCommPar_ptrs.SYNCStartValue > 240){
-//            TPDO->valid = false;
-//    }
-
-    return CO_ERROR_NO;
+        return CO_ERROR_NO;
 }
 
 /******************************************************************************/
@@ -545,32 +493,8 @@ int16_t CO_TPDOsend(CO_TPDO_t *TPDO){
     }
 #endif
 
-//    CO_CANtx_t TXbuff;      /**< CAN transmit buffer */
-    
-//    TPDO->TXbuff.ident = *TPDO->TPDOCommPar_ptrs.COB_IDUsedByTPDO + TPDO->nodeId;
-//    TPDO->TXbuff.DLC = TPDO->dataLength;
-//
-//
-//    i = TPDO->dataLength;
-//    pPDOdataByte = &TPDO->TXbuff.data[0];
-//    ppODdataByte = &TPDO->mapPointer[0];
-//
-//    /* Copy data from Object dictionary. */
-//    for(; i>0; i--) {
-//        *(pPDOdataByte++) = **(ppODdataByte++);
-//    }
-//
-//    TPDO->sendRequest = 0;
-//
-////    CO_CANtx_t TXbuff;      /**< CAN transmit buffer */
-////    TXbuff.ident = SDO->COB_IDServerToClient + SDO->nodeId;
-////    TXbuff.DLC = 8;
-//
-//    return co_driver_send(TPDO->CANdev, &TPDO->TXbuff);
-
-
         CO_CANtx_t TXbuff;      /**< CAN transmit buffer */
-        TXbuff.ident = TPDO->TPDOCommPar.COB_IDUsedByTPDO + TPDO->nodeId;
+        TXbuff.ident = (TPDO->TPDOCommPar.COB_IDUsedByTPDO & 0x7ff) + TPDO->nodeId;
         TXbuff.DLC = TPDO->dataLength;
 
         i = TPDO->dataLength;
@@ -584,23 +508,141 @@ int16_t CO_TPDOsend(CO_TPDO_t *TPDO){
         return co_driver_send(TPDO->CANdev, &TXbuff);
 }
 
+// Check if inhibit timer passed. If passed check COS and set flag (return val) to signal
+// TPDO should or shouldn't be sent
+static bool CO_TPDO_handle_inhibit_time(CO_TPDO_t *TPDO,
+                                        uint32_t time_passed_from_previous_call)
+{
+        bool send_tpdo = false;
+        TPDO->inhibitTimer_us_per_cnt += time_passed_from_previous_call;
+
+        // did inhibit timer run out?
+        if (TPDO->inhibitTimer_us_per_cnt >= TPDO->TPDOCommPar.inhibitTime)
+        {
+                // if change-of-state (COS) happend send tpdo
+                if (CO_TPDOisCOS(TPDO))
+                {
+                        TPDO->inhibitTimer_us_per_cnt = 0;
+                        send_tpdo = true;
+                }
+                else
+                {
+                        // inhibit timer passed but there was no COS
+                        // hold inhibit timer just above the trigger time
+                        // so it wont overflow while waiting for COS
+                        TPDO->inhibitTimer_us_per_cnt = TPDO->TPDOCommPar.inhibitTime;
+                }
+        }
+
+        return send_tpdo;
+}
+
+// Check if event timer passed. If passed set flag (return val) to signal
+// TPDO should be sent
+static bool CO_TPDO_handle_event_time(CO_TPDO_t *TPDO,
+                                        uint32_t time_passed_from_previous_call)
+{
+        bool send_tpdo = false;
+        TPDO->eventTimer_us_per_cnt += time_passed_from_previous_call;
+
+        // did event timer run out?
+        if (TPDO->eventTimer_us_per_cnt >= (TPDO->TPDOCommPar.eventTimer * 1000))
+        {
+                TPDO->eventTimer_us_per_cnt = 0;
+                send_tpdo = true;
+        }
+
+        return send_tpdo;
+}
+
+
 /******************************************************************************/
 void CO_TPDO_process(
-        CO_TPDO_t              *TPDO,
-//        CO_SYNC_t              *SYNC,
-        bool                  syncWas,
-        uint32_t                timeDifference_us)
+        CO_TPDO_t *TPDO,
+        enum co_tpdo_sync_types sync,
+        const uint8_t  sync_data,
+        uint32_t timeDifference_us)
 {
 
-        if (CO_TPDOisCOS(TPDO))
+        bool send_tpdo = false;
+
+        // synchronous (acycle)
+        if (CO_TT_SYNCHRONOUS_ACYCLE  == TPDO->TPDOCommPar.transmissionType)
         {
+                if (CO_TPDO_NO_SYNC != sync)
+                {
+                        if (CO_TPDOisCOS(TPDO))
+                        {
+                                send_tpdo = true;
+                        }
+                }
+        }
+        // synchronous (cycle every Nth sync)
+        else if  (CO_TT_SYNCHRONOUS_EVERY_240_CYCLE >= TPDO->TPDOCommPar.transmissionType)
+        {
+                if (CO_TPDO_NO_SYNC != sync)
+                {
+                        // handle SYNC start value
+                        if (TPDO->waiting_for_right_sync_cnt_value &&
+                            (0 != TPDO->TPDOCommPar.SYNCStartValue) &&
+                            (CO_TPDO_SYNC_WITH_COUNTER == sync ))
+                        {
+                                if (sync_data == TPDO->TPDOCommPar.SYNCStartValue)
+                                {
+                                        TPDO->waiting_for_right_sync_cnt_value = false;
+                                }
+                        }
+
+                        if ((false == TPDO->waiting_for_right_sync_cnt_value) ||
+                            (0 == TPDO->TPDOCommPar.SYNCStartValue) ||
+                            (CO_TPDO_SYNC_WITH_COUNTER != sync ))
+                        {
+                                TPDO->syncCounter += 1;
+                                if (TPDO->TPDOCommPar.transmissionType <= TPDO->syncCounter)
+                                {
+                                        TPDO->syncCounter = 0;
+                                        send_tpdo = true;
+                                        TPDO->waiting_for_right_sync_cnt_value = true;
+                                }
+                        }
+                }
+        }
+        // event driven (manufacturer specific) or
+        // event driven (device and application profile specific)
+        else if (CO_TT_EVENT_DRIVEN_MANUFACTURER_SPECIFIC >=
+                 TPDO->TPDOCommPar.transmissionType)
+        {
+
+                // handle inhibit time
+                if (TPDO->TPDOCommPar.inhibitTime) // is inhibit timer enabled
+                {
+                        send_tpdo = CO_TPDO_handle_inhibit_time(TPDO, timeDifference_us);
+                }
+                else
+                {
+                        if (CO_TPDOisCOS(TPDO))
+                        {
+                                send_tpdo = true;
+                        }
+                }
+
+                // handle event time
+                if (!send_tpdo)
+                {
+                        if (TPDO->TPDOCommPar.eventTimer) // is event timer enabled
+                        {
+                                send_tpdo = CO_TPDO_handle_event_time(TPDO, timeDifference_us);
+                        }
+                }
+        }
+
+        if (send_tpdo)
+        {
+                TPDO->eventTimer_us_per_cnt = 0; //TODO: Should we move this somewhere else?
                 CO_TPDOsend(TPDO);
         }
 }
-//
-////    if(TPDO->valid && *TPDO->operatingState == CO_NMT_OPERATIONAL){
-////      if(TPDO->valid){
-//
+
 //        /* Send PDO by application request or by Event timer */
 ////        if(TPDO->TPDOCommPar->transmissionType >= 253){
 ////              if(*TPDO->TPDOCommPar_ptrs.transmissionType >= 253){

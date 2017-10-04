@@ -81,6 +81,25 @@ extern "C" {
  *    automatic detection of Change of State of specific variable.
  */
 
+
+
+enum co_transmission_types
+{
+        CO_TT_SYNCHRONOUS_ACYCLE = 0,
+        CO_TT_SYNCHRONOUS_EVERY_CYCLE = 1,
+        CO_TT_SYNCHRONOUS_EVERY_240_CYCLE = 0xf0,
+        CO_TT_EVENT_DRIVEN_MANUFACTURER_SPECIFIC = 0xfe,
+        CO_TT_EVENT_DRIVEN_DEV_APP_PROFILE = 0xff,
+};
+
+enum co_tpdo_sync_types
+{
+        CO_TPDO_NO_SYNC = 0,
+        CO_TPDO_SYNC_WITHOUT_COUNTER = 1,
+        CO_TPDO_SYNC_WITH_COUNTER = 2,
+};
+
+        
 /**
  * TPDO communication parameter. The same as record from Object dictionary (index 0x1800+).
  */
@@ -179,39 +198,20 @@ typedef struct{
  * TPDO object.
  */
 typedef struct{
-//    CO_EM_t            *em;             /**< From CO_TPDO_init() */
-//    CO_SDO_t           *SDO;            /**< From CO_TPDO_init() */
         void *OD;    
-    CO_TPDOCommPar_t TPDOCommPar;/**< From CO_TPDO_init() */
-//        CO_TPDOCommPar_ptrs_t TPDOCommPar_ptrs;
-    CO_TPDOMapPar_t  TPDOMapPar; /**< From CO_TPDO_init() */
-//        CO_TPDOMapPar_ptrs_t TPDOMapPar_ptrs; /**< From CO_TPDO_init() */
-//    uint8_t            *operatingState; /**< From CO_TPDO_init() */
-    uint8_t             nodeId;         /**< From CO_TPDO_init() */
-//    uint16_t            defaultCOB_ID;  /**< From CO_TPDO_init() */
-//    uint8_t             restrictionFlags;/**< From CO_TPDO_init() */
-//    bool              valid;          /**< True, if PDO is enabled and valid */
-    /** Data length of the transmitting PDO message. Calculated from mapping */
-    uint8_t             dataLength;
-    /** If application set this flag, PDO will be later sent by
-    function CO_TPDO_process(). Depends on transmission type. */
-//    uint8_t             sendRequest;
-    /** Pointers to 8 data objects, where PDO will be copied */
-//    uint8_t            *mapPointer[8];
-    /** Each flag bit is connected with one mapPointer. If flag bit
-    is true, CO_TPDO_process() functiuon will send PDO if
-    Change of State is detected on value pointed by that mapPointer */
-//    uint8_t             sendIfCOSFlags;
-    /** SYNC counter used for PDO sending */
-//    uint8_t             syncCounter;
-    /** Inhibit timer used for inhibit PDO sending translated to microseconds */
-//    uint32_t            inhibitTimer;
-    /** Event timer used for PDO sending translated to microseconds */
-//    uint32_t            eventTimer;
-    void  *CANdev;       /**< From CO_TPDO_init() */
-//    CO_CANtx_t         *CANtxBuff;      /**< CAN transmit buffer inside CANdev */
-//    uint16_t            CANdevTxIdx;    /**< From CO_TPDO_init() */
-//    CO_CANtx_t TXbuff;      /**< CAN transmit buffer */
+        CO_TPDOCommPar_t TPDOCommPar;/**< From CO_TPDO_init() */
+        CO_TPDOMapPar_t  TPDOMapPar; /**< From CO_TPDO_init() */
+        uint8_t             nodeId;         /**< From CO_TPDO_init() */
+        /** Data length of the transmitting PDO message. Calculated from mapping */
+        uint8_t             dataLength;
+        /** SYNC counter used for PDO sending */
+        uint8_t             syncCounter;
+        bool                waiting_for_right_sync_cnt_value; 
+        /** Inhibit timer used for inhibit PDO sending translated to microseconds */
+        uint32_t            inhibitTimer_us_per_cnt;
+        /** Event timer used for PDO sending translated to microseconds */
+        uint32_t            eventTimer_us_per_cnt;
+        void  *CANdev;       /**< From CO_TPDO_init() */
 }CO_TPDO_t;
 
 /**
@@ -245,22 +245,10 @@ typedef struct{
  */
 CO_ReturnError_t CO_TPDO_init(
         CO_TPDO_t              *TPDO,
-//        CO_EM_t                *em,
-//        CO_SDO_t               *SDO,
         void               *OD,
         uint32_t            COB_IDUsedByTPDO,
-//        uint8_t                *operatingState,
         uint8_t                 nodeId,
-//        uint16_t                defaultCOB_ID,
-//        uint8_t                 restrictionFlags,
-//        const CO_TPDOCommPar_t *TPDOCommPar,
-//        const CO_TPDOMapPar_t  *TPDOMapPar,
-//        uint16_t                idx_TPDOCommPar,
-//        uint16_t                idx_TPDOMapPar,
         void *CANdev);
-//        CO_CANmodule_t         *CANdevTx,
-//        uint16_t                CANdevTxIdx);
-
 
 /**
  * Verify Change of State of the PDO.
@@ -308,12 +296,30 @@ int16_t CO_TPDOsend(CO_TPDO_t *TPDO);
 void CO_TPDO_process(
         CO_TPDO_t              *TPDO,
 //        CO_SYNC_t              *SYNC,
-        bool                  syncWas,
+        enum co_tpdo_sync_types sync,
+        uint8_t  sync_data,
         uint32_t                timeDifference_us);
 
 bool CO_TPDO_is_enabled(CO_TPDO_t *TPDO);
 void CO_TPDO_enable(CO_TPDO_t *TPDO);
 void CO_TPDO_disable(CO_TPDO_t *TPDO);
+
+CO_ReturnError_t CO_TPDO_set_transmission_type(
+        CO_TPDO_t *TPDO,
+        uint8_t transmission_type);
+
+CO_ReturnError_t CO_TPDO_set_inhibit_time(
+                CO_TPDO_t *TPDO,
+                uint16_t inhibit_time);
+
+CO_ReturnError_t CO_TPDO_set_event_time(
+                CO_TPDO_t *TPDO,
+                uint16_t event_time);
+
+CO_ReturnError_t CO_TPDO_set_sync_start_value(
+                CO_TPDO_t *TPDO,
+                uint16_t sync_start_value);
+        
 CO_ReturnError_t CO_TPDO_add_mapping(
                 CO_TPDO_t *TPDO,
                 uint16_t index,
