@@ -186,7 +186,7 @@ enum co_sync_return_codes CO_SYNC_process(
         uint32_t                timeDifference_us);
 
 
-void CO_SYNC_receive(void *object, const CO_CANrxMsg_t *msg);
+int32_t CO_SYNC_receive(void *object, const CO_CANrxMsg_t *msg);
 
 enum co_sync_return_codes CO_SYNC_set_sync_counter_overflow_value(
         CO_SYNC_t              *SYNC,

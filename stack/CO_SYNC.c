@@ -54,13 +54,14 @@
  * message with correct identifier will be received. For more information and
  * description of parameters see file CO_driver.h.
  */
-void CO_SYNC_receive(void *object, const CO_CANrxMsg_t *msg){
+int32_t CO_SYNC_receive(void *object, const CO_CANrxMsg_t *msg){
     CO_SYNC_t *SYNC;
 
     SYNC = (CO_SYNC_t*)object;   /* this is the correct pointer type of the first argument */
     
     memcpy(&SYNC->msg_received, msg, sizeof(CO_CANrxMsg_t));
     SYNC->new_msg_received = true;
+    return 0;
 }
 
 /*
