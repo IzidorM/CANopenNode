@@ -69,7 +69,9 @@ int32_t CO_SYNC_receive(void *object, const CO_CANrxMsg_t *msg){
  *
  * For more information see file CO_SDO.h.
  */
-//static CO_SDO_abortCode_t CO_ODF_1005(CO_ODF_arg_t *ODF_arg){
+uint32_t CO_ODF_1005(CO_ODF_arg_t *ODF_arg){
+        return 0;
+}
 //    CO_SYNC_t *SYNC;
 //    uint32_t value;
 //    CO_SDO_abortCode_t ret = CO_SDO_AB_NONE;

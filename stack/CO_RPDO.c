@@ -490,7 +490,7 @@ void CO_RPDO_process(CO_RPDO_t *RPDO, bool syncWas){
                         ODF_arg.reading = false;
                         ODF_arg.index = index;
                         ODF_arg.subIndex = subIndex;
-                        ODF_arg.object = NULL;
+                        ODF_arg.object_data = NULL;
                         ODF_arg.attribute = CO_OD_getAttribute(obj, subIndex);
                         ODF_arg.data = CO_OD_getDataPointer(obj, subIndex);
                         ODF_arg.dataLength = CO_OD_getLength(obj, subIndex);

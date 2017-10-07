@@ -335,7 +335,7 @@ uint32_t CO_SDO_initTransfer(CO_SDO_t *SDO, uint16_t index, uint8_t subIndex){
     SDO->ODF_arg.ODdataStorage = CO_OD_getDataPointer(SDO->object, subIndex);
     
     /* fill ODF_arg */
-    SDO->ODF_arg.object = NULL;
+    SDO->ODF_arg.object_data = CO_OD_getCallback_data(SDO->object);
     SDO->od_callback = CO_OD_getCallback(SDO->object);
   
     SDO->ODF_arg.data = SDO->databuffer;
@@ -936,8 +936,8 @@ int8_t CO_SDO_process(
 
                 /* indicate data size, if known */
                 if(SDO->ODF_arg.dataLengthTotal != 0U){
-                    uint32_t len = SDO->ODF_arg.dataLengthTotal;
-                    CO_memcpySwap4(&TXbuff.data[4], &len);
+                    uint32_t l = SDO->ODF_arg.dataLengthTotal;
+                    CO_memcpySwap4(&TXbuff.data[4], &l);
                     TXbuff.data[0] = 0x41U;
                 }
                 else{
@@ -1050,8 +1050,8 @@ int8_t CO_SDO_process(
 
             /* indicate data size, if known */
             if(SDO->ODF_arg.dataLengthTotal != 0U){
-                uint32_t len = SDO->ODF_arg.dataLengthTotal;
-                CO_memcpySwap4(&TXbuff.data[4], &len);
+                uint32_t l = SDO->ODF_arg.dataLengthTotal;
+                CO_memcpySwap4(&TXbuff.data[4], &l);
                 TXbuff.data[0] = 0xC6U;
             }
             else{

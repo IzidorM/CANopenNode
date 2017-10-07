@@ -27,6 +27,8 @@
 //}CO_Default_CAN_ID_t;
 
 
+#define CO_CANID_11BIT_MASK 0x7ff
+
 struct CO_core {
         void *CAN_DRIVER;
         void *OD;
