@@ -286,7 +286,7 @@ struct CO_core *CO_init(uint32_t node_id,
         {
                 return NULL;
         }
-        err = (int32_t) co_driver_register_callback(CO_CAN_ID_NMT_SERVICE,
+        err = (int32_t) co_driver_register_rx_callback(can_driver, CO_CAN_ID_NMT_SERVICE,
                                                     CO_NMT_receive,
                                                     &CO_core.NMT);
         if (err)
@@ -315,7 +315,7 @@ struct CO_core *CO_init(uint32_t node_id,
                 return NULL;
         }
 
-        err = (int32_t) co_driver_register_callback(CO_CAN_ID_RSDO + node_id,
+        err = (int32_t) co_driver_register_rx_callback(can_driver, CO_CAN_ID_RSDO + node_id,
                                                     CO_SDO_receive,
                                                     &CO_core.SDO);
         if (err)
@@ -339,7 +339,7 @@ struct CO_core *CO_init(uint32_t node_id,
                 return NULL;
         }
 
-        err = (int32_t) co_driver_register_callback(CO_CAN_ID_SYNC,
+        err = (int32_t) co_driver_register_rx_callback(can_driver, CO_CAN_ID_SYNC,
                                                     CO_SYNC_receive,
                                                     &CO_core.SYNC);
         if (err)
@@ -381,7 +381,8 @@ struct CO_core *CO_init(uint32_t node_id,
 //                return NULL;
 //        }
 //
-//        err = (int32_t) co_driver_register_callback(CO_CAN_ID_RPDO_1 + node_id,
+//        err = (int32_t) co_driver_register_rx_callback(can_driver,
+//        CO_CAN_ID_RPDO_1 + node_id,
 //                                    CO_RPDO_receive,
 //                                    &CO_core.RPDO);
 //        if (err)
