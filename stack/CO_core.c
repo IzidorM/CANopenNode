@@ -339,7 +339,7 @@ struct CO_core *CO_init(uint32_t node_id,
                 return NULL;
         }
 
-        err = (int32_t) co_driver_register_callback(CO_CAN_ID_SYNC + node_id,
+        err = (int32_t) co_driver_register_callback(CO_CAN_ID_SYNC,
                                                     CO_SYNC_receive,
                                                     &CO_core.SYNC);
         if (err)
