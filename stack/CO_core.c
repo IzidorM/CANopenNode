@@ -26,6 +26,63 @@ uint32_t     mappedObjects[8];
 
 struct CO_core CO_core;
 
+static CO_SDO_abortCode_t handle_sync_cob_id(void *args)
+{
+        CO_ODF_arg_t *ODF_arg = args;
+        CO_SYNC_t *SYNC = ODF_arg->object_data;
+
+        if (false == ODF_arg->reading)
+        {
+                uint32_t tmp = (ODF_arg->data[3] << 24) |
+                        (ODF_arg->data[2] << 16) |
+                        (ODF_arg->data[1] << 8) |
+                        ODF_arg->data[0];
+                if (tmp & 1 << 30)
+                {
+                        // Setting gen. bit is not supported
+                        return CO_SDO_AB_INVALID_VALUE;
+                }
+                else if (tmp & (1 << 29))
+                {
+                        // using CAN extended frame is not supported
+                        return CO_SDO_AB_INVALID_VALUE;
+                }
+                else
+                {
+                        SYNC->COB_ID_SYNC = tmp & CO_CANID_11BIT_MASK;
+                }
+        }
+        return CO_SDO_AB_NONE;
+}
+
+int32_t make_sync_od_entries(void *OD, CO_SYNC_t *SYNC)
+{
+        int32_t err;
+
+//        struct con_od_list_node_var *SYNC_communicatio_cycle_period_0x1006;
+//        SYNC_communicatio_cycle_period_0x1006 = MALLOC(sizeof(struct con_od_list_node_var));
+//        INIT_OD_ENTRY_VAR(SYNC_communicatio_cycle_period_0x1006,
+//                          0x1006, OD_TYPE_UINT32,
+//                          CO_ODA_WRITEABLE | CO_ODA_READABLE,
+//                          &SYNC->communicatio_cycle_period,
+//                          NULL, NULL);
+//        err = con_od_add_element_to_od(OD, SYNC_communicatio_cycle_period_0x1006);
+//        if (err)
+//        {
+//                return err;
+//        }
+
+        struct con_od_list_node_var_with_callback *COBID_SYNC_0x1005;
+        COBID_SYNC_0x1005 = MALLOC(sizeof(struct con_od_list_node_var_with_callback));
+        INIT_OD_ENTRY_VAR_WITH_CALLBACK(COBID_SYNC_0x1005, 0x1005, OD_TYPE_UINT32,
+                                        CO_ODA_WRITEABLE | CO_ODA_READABLE,
+                                        &SYNC->COB_ID_SYNC, handle_sync_cob_id,
+                                        &SYNC, NULL, NULL);
+        err = con_od_add_element_to_od(OD, COBID_SYNC_0x1005);
+
+        return err;
+}
+
 int32_t make_rpdo_od_entries(void *OD)
 {
         int32_t err;
@@ -267,6 +324,11 @@ struct CO_core *CO_init(uint32_t node_id,
         }
 
         // init SYNC
+        err = make_sync_od_entries(CO_core.OD, &CO_core.SYNC);
+        if (err)
+        {
+                return NULL;
+        }
         err = CO_SYNC_init(
                 &CO_core.SYNC,
                 CO_CAN_ID_SYNC,
@@ -277,7 +339,7 @@ struct CO_core *CO_init(uint32_t node_id,
                 return NULL;
         }
 
-        err = (int32_t) co_driver_register_callback(CO_CAN_ID_SYNC + node_id,
+        err = (int32_t) co_driver_register_callback(CO_CAN_ID_SYNC,
                                                     CO_SYNC_receive,
                                                     &CO_core.SYNC);
         if (err)
